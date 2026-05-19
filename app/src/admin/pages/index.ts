@@ -1,0 +1,9 @@
+export { default as AdminLogin } from './AdminLogin';
+export { default as Dashboard } from './Dashboard';
+export { default as Pages } from './Pages';
+export { default as Sections } from './Sections';
+export { default as Media } from './Media';
+export { default as Users } from './Users';
+export { default as Clients } from './Clients';
+export { default as ClientDetail } from './ClientDetail';
+export { default as Portal } from './Portal';

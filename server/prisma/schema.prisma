@@ -1,0 +1,150 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  password  String
+  role      Role     @default(cliente)
+  status    Status   @default(active)
+  lastLogin DateTime @updatedAt @map("last_login")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  activityLogs ActivityLog[]
+  clients      Client[]
+
+  @@map("users")
+}
+
+model Page {
+  id          String  @id @default(uuid())
+  title       String
+  slug        String  @unique
+  description String
+  active      Boolean @default(true)
+  order       Int     @default(0)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  sections Section[]
+
+  @@map("pages")
+}
+
+model Section {
+  id        String  @id @default(uuid())
+  pageId    String  @map("page_id")
+  page      Page    @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  title     String
+  subtitle  String
+  content   String  @db.Text
+  type      String
+  active    Boolean @default(true)
+  order     Int     @default(0)
+  imageUrl  String? @map("image_url")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("sections")
+}
+
+model Media {
+  id         String   @id @default(uuid())
+  name       String
+  src        String
+  folder     String   @default("General")
+  dimensions String?
+  size       String?
+  mimeType   String?  @map("mime_type")
+  clientId   String?  @map("client_id")
+  sectionId  String?  @map("section_id")
+  order      Int      @default(0)
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  clientMedias ClientMedia[]
+
+  @@map("media")
+}
+
+model Client {
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  phone     String?
+  project   String?
+  status    Status   @default(active)
+  token     String   @unique
+  userId    String?  @map("user_id")
+  user      User?    @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now()) @map("created_at")
+
+  medias ClientMedia[]
+
+  @@map("clients")
+}
+
+model ClientMedia {
+  id        String @id @default(uuid())
+  clientId  String @map("client_id")
+  client    Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  mediaId   String @map("media_id")
+  media     Media  @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([clientId, mediaId])
+  @@map("client_media")
+}
+
+model Video {
+  id           String   @id @default(uuid())
+  title        String
+  url          String   @default("")
+  src          String?  @default("")
+  playbackRate Float    @default(1) @map("playback_rate")
+  sectionId    String?  @map("section_id")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@map("videos")
+}
+
+model ActivityLog {
+  id        String     @id @default(uuid())
+  action    ActionType
+  entity    String
+  entityId  String     @map("entity_id")
+  detail    String
+  userId    String?    @map("user_id")
+  user      User?      @relation(fields: [userId], references: [id])
+  userName  String?    @map("user_name")
+  createdAt DateTime   @default(now()) @map("created_at")
+
+  @@map("activity_logs")
+}
+
+enum Role {
+  admin
+  editor
+  cliente
+}
+
+enum Status {
+  active
+  inactive
+}
+
+enum ActionType {
+  create
+  edit
+  delete
+  upload
+  login
+  logout
+}

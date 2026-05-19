@@ -1,0 +1,34 @@
+services:
+  db:
+    image: dhi.io/postgres:18-alpine3.22-dev
+    container_name: fjr-db
+    environment:
+      POSTGRES_USER: fjruser
+      POSTGRES_PASSWORD: fjrpass
+      POSTGRES_DB: fjrservices
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U fjruser -d fjrservices"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  minio:
+    image: minio/minio:latest
+    container_name: fjr-minio
+    environment:
+      MINIO_ROOT_USER: fjrminio
+      MINIO_ROOT_PASSWORD: fjrminiosecret
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio_data:/data
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+
+volumes:
+  postgres_data:
+  minio_data:

@@ -1,0 +1,73 @@
+# Dependencies
+app/node_modules/
+server/node_modules/
+node_modules/
+
+# Build outputs
+app/dist/
+server/dist/
+server/build/
+*.tsbuildinfo
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+app/.env
+server/.env
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# Runtime data
+pids/
+*.pid
+*.seed
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Docker volumes (if any local data)
+docker-data/
+postgres-data/
+
+# Prisma (generated but not committed)
+server/prisma/migrations/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# User data / uploads
+Fotos_validas/
+FJRServices.png
+
+# Backups
+app-backup/
+*-backup/
+
+# Temporary test files
+server/test.zip
+server/testimg.jpg
+
+# User reports / work files
+plan.md
+reporte_imagenes.csv
+log_eliminados.csv
+fjrservices_full_screenshot.png
+*.zip
+
+# Duplicate logos in public (already in root)
+app/public/FJRServices.png
+app/public/LOGOFJRSERVICES.jpg
+LOGOFJRSERVICES.jpg
