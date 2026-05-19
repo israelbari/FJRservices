@@ -3,6 +3,12 @@ FROM node:22-alpine AS builder
 
 WORKDIR /app
 
+# Build args for Vite env variables
+ARG VITE_API_URL
+ARG VITE_STORAGE_URL
+ENV VITE_API_URL=${VITE_API_URL}
+ENV VITE_STORAGE_URL=${VITE_STORAGE_URL}
+
 # Copiar archivos de dependencias primero (mejor cacheo)
 COPY package*.json ./
 RUN npm ci

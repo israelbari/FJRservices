@@ -16,11 +16,10 @@ import { ValuesSection } from './ValuesSection';
 import { ServiceCategoriesSection } from './ServiceCategoriesSection';
 import { ServiceDetailSection } from './ServiceDetailSection';
 
+import { getStorageUrl } from '@/lib/storage';
+
 export function getImageUrl(src?: string | null): string {
-  if (!src) return '';
-  if (src.startsWith('http')) return src;
-  if (src.startsWith('/')) return src;
-  return `http://localhost:9000/${src}`;
+  return getStorageUrl(src);
 }
 
 export function SectionRenderer({ section }: { section: Section }) {

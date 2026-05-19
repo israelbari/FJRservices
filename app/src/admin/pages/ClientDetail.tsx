@@ -109,10 +109,10 @@ function getAvatarGradient(name: string): string {
   return gradients[Math.abs(hash) % gradients.length];
 }
 
+import { getStorageUrl } from '@/lib/storage';
+
 function getMediaUrl(src: string): string {
-  if (!src) return '';
-  if (src.startsWith('http')) return src;
-  return `http://localhost:9000/${src}`;
+  return getStorageUrl(src);
 }
 
 function formatDate(dateStr: string): string {

@@ -18,6 +18,7 @@ const envSchema = z.object({
   MINIO_SECRET_KEY: z.string(),
   MINIO_BUCKET_MEDIA: z.string().default('media'),
   MINIO_BUCKET_CLIENTS: z.string().default('client-media'),
+  MINIO_PUBLIC_URL: z.string().optional().default(''),
   ODOO_URL: z.string().optional().default(''),
   ODOO_DB: z.string().optional().default(''),
   ODOO_USERNAME: z.string().optional().default(''),

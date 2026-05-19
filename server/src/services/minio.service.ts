@@ -53,6 +53,9 @@ export async function deleteFile(bucket: string, objectName: string): Promise<vo
 }
 
 export function getPublicUrl(bucket: string, objectName: string): string {
+  if (env.MINIO_PUBLIC_URL) {
+    return `${env.MINIO_PUBLIC_URL}/${bucket}/${objectName}`;
+  }
   return `http://${env.MINIO_ENDPOINT}:${env.MINIO_PORT}/${bucket}/${objectName}`;
 }
 

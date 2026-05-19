@@ -4,6 +4,7 @@ import gsap from 'gsap';
 import { useGSAP } from '@gsap/react';
 import type { Section } from '@/admin/types';
 import { getImageUrl } from './SectionRenderer';
+import { getStorageUrl } from '@/lib/storage';
 import { ImageCarousel } from './ImageCarousel';
 
 export function HeroSection({ section }: { section: Section }) {
@@ -25,7 +26,7 @@ export function HeroSection({ section }: { section: Section }) {
   const ctaTarget = content.ctaTarget || 'servicios';
   const bgImage = getImageUrl(section.imageUrl || '/hero-yacht.jpg');
   const video = section.videos && section.videos.length > 0 ? section.videos[0] : null;
-  const videoSrc = video?.src ? `http://localhost:9000/${video.src}` : null;
+  const videoSrc = video?.src ? getStorageUrl(video.src) : null;
   const playbackRate = video?.playbackRate ?? 1;
   const hasMedias = section.medias && section.medias.length > 0;
 

@@ -67,6 +67,7 @@ import {
 import { toast } from 'sonner';
 import type { Page, Section, Media } from '../types';
 import { getPages, getSections, createSection, updateSection, deleteSection, getMedia, updateMedia } from '../services/api.service';
+import { getStorageUrl } from '@/lib/storage';
 
 const PAGE_TABS = [
   { id: 'p1', label: 'Inicio', icon: Home, color: '#4A90D9', bg: '#EFF6FF' },
@@ -866,7 +867,7 @@ export default function Sections() {
                       <div key={media.id} className="relative group w-[80px]">
                         <div className="w-[80px] h-[80px] rounded-lg overflow-hidden border border-[#E2E8F0]">
                           <img
-                            src={media.src.startsWith('http') ? media.src : `http://localhost:9000/${media.src}`}
+                            src={getStorageUrl(media.src)}
                             alt={media.name}
                             className="w-full h-full object-cover"
                             onError={(e) => { (e.target as HTMLImageElement).src = '/hero-yacht.jpg'; }}
@@ -1008,7 +1009,7 @@ export default function Sections() {
                     >
                       <div className="aspect-square">
                         <img
-                          src={media.src.startsWith('http') ? media.src : `http://localhost:9000/${media.src}`}
+                          src={getStorageUrl(media.src)}
                           alt={media.name}
                           className="w-full h-full object-cover"
                           onError={(e) => { (e.target as HTMLImageElement).src = '/hero-yacht.jpg'; }}

@@ -46,6 +46,7 @@ export interface Media {
   mimeType?: string | null;
   clientId?: string | null;
   sectionId?: string | null;
+  order: number;
   createdAt: string;
 }
 

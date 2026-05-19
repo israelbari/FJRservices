@@ -30,6 +30,7 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast, Toaster } from 'sonner';
 import { api } from '@/lib/api';
+import { getStorageUrl } from '@/lib/storage';
 import { getMedia, uploadMedia, uploadZipMedia, updateMedia, deleteMedia, getVideos, createVideo, updateVideo, deleteVideo as deleteVideoApi, getClients } from '../services/api.service';
 import type { Media, Video, Client } from '../types';
 
@@ -439,11 +440,7 @@ export default function MediaPage() {
     setVideoForm({ title: v.title, url: v.url, sectionId: v.sectionId || '', playbackRate: String(v.playbackRate ?? 1) });
   };
 
-  const getMediaUrl = (src: string) => {
-    if (!src) return '';
-    if (src.startsWith('http')) return src;
-    return `http://localhost:9000/${src}`;
-  };
+  const getMediaUrl = (src: string) => getStorageUrl(src);
 
   const formatDate = (dateStr: string) => {
     return new Date(dateStr).toLocaleDateString('es-ES', {
@@ -1490,7 +1487,7 @@ export default function MediaPage() {
               <div className="aspect-video rounded-lg overflow-hidden bg-[#001529]">
                 {playVideo.src ? (
                   <video
-                    src={`http://localhost:9000/${playVideo.src}`}
+                    src={getStorageUrl(playVideo.src)}
                     title={playVideo.title}
                     className="w-full h-full"
                     controls
