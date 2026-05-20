@@ -627,8 +627,7 @@ export default function MediaPage() {
           <div className="flex items-center gap-2">
             <Button
               onClick={() => { setBatchFolder('Galeria'); setBatchActionOpen('move'); }}
-              variant="outline"
-              className="border-white/30 text-white hover:bg-white/10 h-9 px-3 rounded-lg text-[13px] font-semibold"
+              className="bg-[#E8913A] hover:bg-[#D47A2A] text-white h-9 px-3 rounded-lg text-[13px] font-semibold"
             >
               Mover carpeta
             </Button>
