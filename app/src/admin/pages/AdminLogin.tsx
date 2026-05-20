@@ -36,13 +36,18 @@ export default function AdminLogin() {
     }
 
     setIsLoading(true);
-    const success = await login(email, password);
-    setIsLoading(false);
-
-    if (success) {
-      navigate('/admin', { replace: true });
-    } else {
-      setError('Correo o contrasena incorrectos');
+    try {
+      const result = await login(email, password);
+      if (result.success) {
+        navigate('/admin', { replace: true });
+      } else {
+        setError(result.error || 'Correo o contrasena incorrectos');
+      }
+    } catch (err: any) {
+      console.error('Submit error:', err);
+      setError('Error inesperado. Revisa la consola (F12) para mas detalles.');
+    } finally {
+      setIsLoading(false);
     }
   };
 

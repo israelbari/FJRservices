@@ -13,7 +13,7 @@ interface User {
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
-  login: (email: string, password: string) => Promise<boolean>;
+  login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
   isAdmin: () => boolean;
   isEditor: () => boolean;
@@ -41,14 +41,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     fetchMe();
   }, [fetchMe]);
 
-  const login = useCallback(async (email: string, password: string): Promise<boolean> => {
+  const login = useCallback(async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
     try {
       const res = await api.post('/auth/login', { email, password });
       localStorage.setItem('accessToken', res.data.accessToken);
       setUser(res.data.user);
-      return true;
-    } catch {
-      return false;
+      return { success: true };
+    } catch (err: any) {
+      console.error('Login error:', err);
+      const message = err?.response?.data?.message || err?.message || 'Error de conexion';
+      return { success: false, error: message };
     }
   }, []);
 
