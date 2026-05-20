@@ -221,7 +221,7 @@ function WavePattern() {
 }
 
 export default function Services() {
-  const { sections, loading } = usePage('servicios');
+  const { page, sections, loading } = usePage('servicios');
 
   if (loading) {
     return (
@@ -231,7 +231,7 @@ export default function Services() {
     );
   }
 
-  if (sections.length > 0) {
+  if (page?.useDynamicContent && sections.length > 0) {
     return (
       <div>
         {sections.map((section) => (

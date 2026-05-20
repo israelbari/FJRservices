@@ -7,6 +7,7 @@ const pageSchema = z.object({
   slug: z.string().min(1),
   description: z.string().default(''),
   active: z.boolean().default(true),
+  useDynamicContent: z.boolean().default(false),
   order: z.number().int().default(0),
 });
 

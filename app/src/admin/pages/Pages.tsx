@@ -95,6 +95,7 @@ export default function Pages() {
   const [formMetaTitle, setFormMetaTitle] = useState('');
   const [formMetaDesc, setFormMetaDesc] = useState('');
   const [formActive, setFormActive] = useState(true);
+  const [formUseDynamicContent, setFormUseDynamicContent] = useState(false);
 
   useEffect(() => {
     const load = async () => {
@@ -146,6 +147,7 @@ export default function Pages() {
     setFormMetaTitle('');
     setFormMetaDesc('');
     setFormActive(true);
+    setFormUseDynamicContent(false);
     setSelectedPage(null);
   };
 
@@ -162,6 +164,7 @@ export default function Pages() {
     setFormMetaTitle(page.title);
     setFormMetaDesc(page.description);
     setFormActive(page.active);
+    setFormUseDynamicContent(page.useDynamicContent);
     setDialogMode('edit');
     setDialogOpen(true);
   };
@@ -202,6 +205,7 @@ export default function Pages() {
           slug,
           description: formMetaDesc.trim(),
           active: formActive,
+          useDynamicContent: formUseDynamicContent,
           order: selectedPage.order,
           updatedAt: new Date().toISOString(),
         });
@@ -211,6 +215,7 @@ export default function Pages() {
           slug,
           description: formMetaDesc.trim(),
           active: formActive,
+          useDynamicContent: formUseDynamicContent,
           order: pages.length + 1,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
@@ -579,6 +584,22 @@ export default function Pages() {
                     checked={formActive}
                     onCheckedChange={setFormActive}
                     className="data-[state=checked]:bg-[#10B981] data-[state=unchecked]:bg-[#D1D5DB]"
+                  />
+                </div>
+
+                <div className="flex items-center justify-between py-2">
+                  <div>
+                    <Label className="text-[13px] font-medium text-[#374151] block">
+                      Contenido dinamico
+                    </Label>
+                    <p className="text-[11px] text-[#94A3B8]">
+                      {formUseDynamicContent ? 'Usa secciones del admin' : 'Usa contenido por defecto'}
+                    </p>
+                  </div>
+                  <Switch
+                    checked={formUseDynamicContent}
+                    onCheckedChange={setFormUseDynamicContent}
+                    className="data-[state=checked]:bg-[#4A90D9] data-[state=unchecked]:bg-[#D1D5DB]"
                   />
                 </div>
               </div>

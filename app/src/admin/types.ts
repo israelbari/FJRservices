@@ -14,6 +14,7 @@ export interface Page {
   slug: string;
   description: string;
   active: boolean;
+  useDynamicContent: boolean;
   order: number;
   createdAt: string;
   updatedAt: string;

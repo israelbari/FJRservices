@@ -68,7 +68,7 @@ function StatItem({ number, suffix, label, inView }: StatItemProps) {
 }
 
 export default function About() {
-  const { sections, loading } = usePage('nosotros');
+  const { page, sections, loading } = usePage('nosotros');
 
   if (loading) {
     return (
@@ -78,7 +78,7 @@ export default function About() {
     );
   }
 
-  if (sections.length > 0) {
+  if (page?.useDynamicContent && sections.length > 0) {
     return (
       <div>
         {sections.map((section) => (

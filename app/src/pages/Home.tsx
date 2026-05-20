@@ -19,7 +19,7 @@ const FALLBACK_SECTIONS: Section[] = [
 ];
 
 export default function Home() {
-  const { sections, loading } = usePage('inicio');
+  const { page, sections, loading } = usePage('inicio');
 
   if (loading) {
     return (
@@ -29,7 +29,7 @@ export default function Home() {
     );
   }
 
-  const displaySections = sections.length > 0 ? sections : FALLBACK_SECTIONS;
+  const displaySections = page?.useDynamicContent && sections.length > 0 ? sections : FALLBACK_SECTIONS;
 
   return (
     <div>

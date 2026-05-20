@@ -546,7 +546,7 @@ function ContactContent() {
 }
 
 export default function Contact() {
-  const { sections, loading } = usePage('contacto');
+  const { page, sections, loading } = usePage('contacto');
 
   if (loading) {
     return (
@@ -556,7 +556,7 @@ export default function Contact() {
     );
   }
 
-  if (sections.length > 0) {
+  if (page?.useDynamicContent && sections.length > 0) {
     return (
       <div>
         {sections.map((section) => (
