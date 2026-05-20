@@ -183,6 +183,7 @@ export default function MediaPage() {
   const clearSelection = () => setSelectedIds(new Set());
 
   const handleBatchMove = async () => {
+    console.log('handleBatchMove called', { selectedIds: Array.from(selectedIds), batchFolder });
     if (selectedIds.size === 0) return;
     try {
       const results = await Promise.allSettled(
