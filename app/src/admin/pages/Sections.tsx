@@ -140,6 +140,21 @@ export default function Sections() {
     load();
   }, []);
 
+  // Auto-open edit dialog from query param
+  useEffect(() => {
+    if (sections.length === 0) return;
+    const params = new URLSearchParams(window.location.search);
+    const editId = params.get('edit');
+    if (editId) {
+      const section = sections.find((s) => s.id === editId);
+      if (section) {
+        openEdit(section);
+        // Clean URL
+        window.history.replaceState({}, '', window.location.pathname);
+      }
+    }
+  }, [sections]);
+
   const allUniqueTypes = useMemo(() => {
     const types = new Set<string>();
     sections.forEach((s) => types.add(s.type));
