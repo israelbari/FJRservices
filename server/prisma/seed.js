@@ -47,14 +47,31 @@ async function main() {
     // Sections
     await prisma.section.createMany({
         data: [
-            { id: 's1', pageId: 'p1', title: 'Hero Principal', subtitle: 'Bienvenidos a FJR Services', content: 'Tu socio confiable en servicios maritimos. Reparacion, mantenimiento y venta de equipo naval.', type: 'hero', active: true, order: 1 },
-            { id: 's2', pageId: 'p1', title: 'Servicios Destacados', subtitle: 'Lo que ofrecemos', content: 'Resumen de nuestros principales servicios maritimos.', type: 'features', active: true, order: 2 },
-            { id: 's3', pageId: 'p1', title: 'Galeria de Proyectos', subtitle: 'Nuestro trabajo', content: 'Coleccion de imagenes de proyectos recientes.', type: 'gallery', active: true, order: 3 },
-            { id: 's4', pageId: 'p1', title: 'Estadisticas', subtitle: 'Numeros que respaldan', content: 'Anos de experiencia, proyectos completados y clientes satisfechos.', type: 'stats', active: true, order: 4 },
-            { id: 's9', pageId: 'p2', title: 'Hero Servicios', subtitle: 'Nuestros Servicios', content: 'Soluciones integrales para la industria maritima.', type: 'hero', active: true, order: 1 },
-            { id: 's10', pageId: 'p2', title: 'Lista de Servicios', subtitle: 'Detalle de servicios', content: 'Descripcion completa de cada servicio ofrecido.', type: 'list', active: true, order: 2 },
-            { id: 's14', pageId: 'p3', title: 'Hero Nosotros', subtitle: 'Quienes Somos', content: 'Conoce la historia y mision de FJR Services.', type: 'hero', active: true, order: 1 },
-            { id: 's18', pageId: 'p4', title: 'Hero Contacto', subtitle: 'Contactanos', content: 'Estamos aqui para ayudarte con tus necesidades maritimas.', type: 'hero', active: true, order: 1 },
+            // Home
+            { id: 's1', pageId: 'p1', title: 'FJR SERVICES', subtitle: 'Reparacion y Mantenimiento de Embarcaciones', content: '{"description":"Especialistas en mecanica, pintura y electronica naval. Resultados garantizados para que solo te preocupes de navegar.","ctaText":"Ver Servicios","ctaTarget":"servicios"}', type: 'hero', active: true, order: 1, imageUrl: '/hero-yacht.jpg' },
+            { id: 's2', pageId: 'p1', title: 'Servicios', subtitle: 'Servicios Ofrecidos', content: '{"description":"Conocimiento en la manipulacion de los siguientes elementos","ctaText":"Ver Todos los Servicios","ctaLink":"/servicios"}', type: 'services-grid', active: true, order: 2 },
+            { id: 's3', pageId: 'p1', title: 'Experiencia', subtitle: 'Trabajos', content: '{"description":"A continuacion una recopilacion de algunos de nuestros trabajos"}', type: 'gallery', active: true, order: 3 },
+            { id: 's4', pageId: 'p1', title: 'Confianza', subtitle: 'Marcas', content: '{"description":"Tenemos experiencia en las siguientes marcas"}', type: 'brands', active: true, order: 4 },
+            { id: 's5', pageId: 'p1', title: 'Ubicacion', subtitle: 'Clubes Nauticos y Puertos', content: '{"description":"Trabajamos en los principales clubes nauticos de la Region de Murcia"}', type: 'clubs', active: true, order: 5 },
+            { id: 's6', pageId: 'p1', title: 'No Pierdas el Rumbo', subtitle: 'Recomendaciones', content: '{"description":"Herramientas utiles para tu navegacion"}', type: 'weather-apps', active: true, order: 6 },
+            { id: 's7', pageId: 'p1', title: 'Mantenimiento', subtitle: 'La Importancia del Mantenimiento Preventivo', content: '{"description":"Las embarcaciones de recreo estan expuestas a factores ambientales como el agua salada, el viento, el sol, la lluvia, el frio y el calor. Un mantenimiento preventivo regular no solo prolonga la vida util de tu embarcacion, sino que evita costosas averias inesperadas y garantiza tu seguridad en el mar."}', type: 'maintenance', active: true, order: 7 },
+            { id: 's8', pageId: 'p1', title: 'Contacto', subtitle: 'Hablamos?', content: '{"description":"Cuentanos que necesitas y te daremos la mejor solucion","email":"info@fjrservices.com","phone":"474-937-8270","location":"Region de Murcia, Espana"}', type: 'contact', active: true, order: 8, imageUrl: '/contact-marina.jpg' },
+            // Services
+            { id: 's9', pageId: 'p2', title: 'Servicios', subtitle: 'Nuestros Servicios', content: '{"description":"Ofrecemos un servicio integral de reparacion y mantenimiento de embarcaciones de recreo. Desde la mecanica de motores hasta la pintura de obra muerta, cubrimos todas las necesidades de tu barco."}', type: 'page-header', active: true, order: 1 },
+            { id: 's10', pageId: 'p2', title: 'Categorias', subtitle: 'Areas de Especializacion', content: '{"description":"Nuestros servicios se organizan en tres areas principales para cubrir todas tus necesidades."}', type: 'content', active: true, order: 2 },
+            { id: 's11', pageId: 'p2', title: 'Detalle', subtitle: 'Servicios Especializados', content: '{"description":"Conoce a fondo cada uno de nuestros servicios y como pueden ayudarte a mantener tu embarcacion en perfectas condiciones."}', type: 'content', active: true, order: 3 },
+            { id: 's12', pageId: 'p2', title: 'CTA', subtitle: 'Listo para Navegar con Tranquilidad?', content: '{"description":"Contacta con nosotros y te haremos un presupuesto a medida para tu embarcacion.","ctaText":"Contactar Ahora","ctaLink":"/contacto"}', type: 'cta', active: true, order: 4 },
+            // About
+            { id: 's13', pageId: 'p3', title: 'Nosotros', subtitle: 'Sobre Nosotros', content: '{"description":"Mas de 20 anos de experiencia en el sector naval"}', type: 'page-header', active: true, order: 1, imageUrl: '/about-sunset.jpg' },
+            { id: 's14', pageId: 'p3', title: 'Bienvenido', subtitle: 'Quienes Somos', content: '{"paragraphs":["FJR Services nace de la pasion de Francisco Javier Rivero Sanchez por el mundo nautico. Con mas de dos decadas de experiencia en el sector naval, hemos construido una reputacion solida basada en la calidad del trabajo, la honestidad y el compromiso con cada cliente.","Nuestra empresa se especializa en la reparacion y mantenimiento integral de embarcaciones de recreo. Desde motores intraborda hasta sistemas de refrigeracion, pasando por la pintura de obra muerta y el aislamiento de salas de maquinas, ofrecemos un servicio completo que cubre todas las necesidades de tu barco.","Trabajamos en los principales clubes nauticos y puertos de la Region de Murcia, incluyendo Cartagena, La Manga, Los Alcazares y San Pedro del Pinatar. Nuestra proximidad y disponibilidad garantizan una respuesta rapida ante cualquier necesidad."],"images":["/about-welcome-1.jpg","/about-welcome-2.jpg"],"layout":"text-left"}', type: 'content', active: true, order: 2 },
+            { id: 's15', pageId: 'p3', title: 'Nuestros Valores', subtitle: 'Lo Que Nos Define', content: '{}', type: 'values', active: true, order: 3 },
+            { id: 's16', pageId: 'p3', title: 'Experiencia', subtitle: 'Numeros que Hablan', content: '{}', type: 'stats', active: true, order: 4 },
+            { id: 's17', pageId: 'p3', title: 'CTA', subtitle: 'Quieres formar parte de nuestra historia?', content: '{"ctaText":"Contactar","ctaLink":"/contacto"}', type: 'cta', active: true, order: 5 },
+            // Contact
+            { id: 's18', pageId: 'p4', title: 'Contacto', subtitle: 'Contacto', content: '{"description":"Estamos aqui para ayudarte. Cuentanos que necesitas y te responderemos en menos de 24 horas."}', type: 'page-header', active: true, order: 1 },
+            { id: 's19', pageId: 'p4', title: 'Info', subtitle: 'Informacion de Contacto', content: '{}', type: 'info-cards', active: true, order: 2 },
+            { id: 's20', pageId: 'p4', title: 'Formulario', subtitle: 'Envianos un Mensaje', content: '{"description":"Rellena el formulario y te contactaremos lo antes posible."}', type: 'contact', active: true, order: 3 },
+            { id: 's21', pageId: 'p4', title: 'CTA', subtitle: 'Respuesta Garantizada en 24h', content: '{"description":"Entendemos que cada dia sin tu embarcacion cuenta. Por eso nos comprometemos a responderte en menos de 24 horas con un presupuesto detallado y un plan de accion."}', type: 'cta', active: true, order: 4 },
         ],
         skipDuplicates: true,
     });
@@ -79,4 +96,3 @@ main()
     .finally(async () => {
     await prisma.$disconnect();
 });
-//# sourceMappingURL=seed.js.map
