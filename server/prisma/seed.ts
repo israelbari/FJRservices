@@ -36,10 +36,10 @@ async function main() {
   // Pages
   await prisma.page.createMany({
     data: [
-      { id: 'p1', title: 'Inicio', slug: 'inicio', description: 'Pagina principal con hero, servicios, galeria y mas', active: true, order: 1 },
-      { id: 'p2', title: 'Servicios', slug: 'servicios', description: 'Detalle de servicios maritimos ofrecidos', active: true, order: 2 },
-      { id: 'p3', title: 'Nosotros', slug: 'nosotros', description: 'Informacion sobre FJR Services', active: true, order: 3 },
-      { id: 'p4', title: 'Contacto', slug: 'contacto', description: 'Formulario e informacion de contacto', active: true, order: 4 },
+      { id: 'p1', title: 'Inicio', slug: 'inicio', description: 'Pagina principal con hero, servicios, galeria y mas', active: true, useDynamicContent: true, order: 1 },
+      { id: 'p2', title: 'Servicios', slug: 'servicios', description: 'Detalle de servicios maritimos ofrecidos', active: true, useDynamicContent: true, order: 2 },
+      { id: 'p3', title: 'Nosotros', slug: 'nosotros', description: 'Informacion sobre FJR Services', active: true, useDynamicContent: true, order: 3 },
+      { id: 'p4', title: 'Contacto', slug: 'contacto', description: 'Formulario e informacion de contacto', active: true, useDynamicContent: true, order: 4 },
     ],
     skipDuplicates: true,
   });
