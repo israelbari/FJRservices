@@ -24,8 +24,19 @@ export function GallerySection({ section }: { section: Section }) {
     try { return JSON.parse(section.content || '{}'); } catch { return { text: section.content, description: section.content }; }
   })();
 
-  const items = content.items || DEFAULT_ITEMS;
-  const filters = content.filters || DEFAULT_FILTERS;
+  const hasMedias = section.medias && section.medias.length > 0;
+
+  // Build items from medias if available, otherwise from content.items or defaults
+  const items = hasMedias
+    ? section.medias!.map((media) => ({
+        id: media.id,
+        image: media.src,
+        category: '',
+        title: media.title || media.name,
+      }))
+    : (content.items || DEFAULT_ITEMS);
+
+  const filters = hasMedias ? ['Todos'] : (content.filters || DEFAULT_FILTERS);
   const overline = section.title || 'Experiencia';
   const heading = section.subtitle || 'Trabajos';
   const description = content.description || 'A continuacion una recopilacion de algunos de nuestros trabajos';
@@ -48,26 +59,29 @@ export function GallerySection({ section }: { section: Section }) {
           <p className="mt-2 text-[15px] text-[#5A6B7C]">{description}</p>
         </div>
 
-        <div className="flex flex-wrap justify-center gap-3 mb-8">
-          {filters.map((filter: string) => (
-            <button
-              key={filter}
-              onClick={() => setActiveFilter(filter)}
-              className={
-                'px-5 py-2 text-[13px] font-inter font-medium transition-all duration-300 border rounded-full ' +
-                (activeFilter === filter
-                  ? 'bg-[#00B4D8] text-white border-[#00B4D8]'
-                  : 'bg-transparent text-[#5A6B7C] border-[#D1D5DB] hover:border-[#00B4D8] hover:text-[#00B4D8]')
-              }
-            >
-              {filter}
-            </button>
-          ))}
-        </div>
+        {/* Filters — only show when not using medias directly (or when there are categories) */}
+        {!hasMedias && (
+          <div className="flex flex-wrap justify-center gap-3 mb-8">
+            {filters.map((filter: string) => (
+              <button
+                key={filter}
+                onClick={() => setActiveFilter(filter)}
+                className={
+                  'px-5 py-2 text-[13px] font-inter font-medium transition-all duration-300 border rounded-full ' +
+                  (activeFilter === filter
+                    ? 'bg-[#00B4D8] text-white border-[#00B4D8]'
+                    : 'bg-transparent text-[#5A6B7C] border-[#D1D5DB] hover:border-[#00B4D8] hover:text-[#00B4D8]')
+                }
+              >
+                {filter}
+              </button>
+            ))}
+          </div>
+        )}
 
         <motion.div layout className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
           <AnimatePresence>
-            {filteredItems.map((item: { id: number; image: string; category: string; title: string }) => (
+            {filteredItems.map((item: { id: string | number; image: string; category: string; title: string }) => (
               <motion.div
                 key={item.id}
                 layout
@@ -83,9 +97,11 @@ export function GallerySection({ section }: { section: Section }) {
                   className="w-full h-full object-cover transition-transform duration-[400ms] group-hover:scale-[1.08]"
                 />
                 <div className="absolute inset-0 bg-[rgba(10,22,40,0.6)] opacity-0 group-hover:opacity-100 transition-opacity duration-[400ms] flex flex-col justify-end p-4">
-                  <span className="text-[12px] uppercase tracking-[0.1em] text-[#00B4D8] font-inter font-semibold">
-                    {item.category}
-                  </span>
+                  {item.category && (
+                    <span className="text-[12px] uppercase tracking-[0.1em] text-[#00B4D8] font-inter font-semibold">
+                      {item.category}
+                    </span>
+                  )}
                   <span className="text-[14px] text-white font-sans font-medium mt-1">{item.title}</span>
                 </div>
               </motion.div>

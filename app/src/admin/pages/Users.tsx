@@ -90,6 +90,8 @@ export default function UsersPage() {
     role: 'cliente' as 'admin' | 'editor' | 'cliente',
     status: true,
     password: '',
+    telegramId: '',
+    telegramName: '',
   });
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
@@ -142,7 +144,7 @@ export default function UsersPage() {
   };
 
   const resetForm = () => {
-    setForm({ name: '', email: '', role: 'cliente', status: true, password: '' });
+    setForm({ name: '', email: '', role: 'cliente', status: true, password: '', telegramId: '', telegramName: '' });
     setFormErrors({});
   };
 
@@ -159,6 +161,8 @@ export default function UsersPage() {
       role: user.role,
       status: user.status === 'active',
       password: '',
+      telegramId: user.telegramId || '',
+      telegramName: user.telegramName || '',
     });
     setFormErrors({});
   };
@@ -172,6 +176,8 @@ export default function UsersPage() {
         password: form.password,
         role: form.role,
         status: form.status ? 'active' : 'inactive',
+        telegramId: form.telegramId.trim() || undefined,
+        telegramName: form.telegramName.trim() || undefined,
       });
       const all = await getUsers();
       setUsers(all);
@@ -192,6 +198,8 @@ export default function UsersPage() {
         email: form.email.trim().toLowerCase(),
         role: form.role,
         status: form.status ? 'active' : 'inactive',
+        telegramId: form.telegramId.trim() || undefined,
+        telegramName: form.telegramName.trim() || undefined,
       };
       if (form.password.trim()) payload.password = form.password;
       await updateUser(editUser.id, payload);
@@ -589,6 +597,30 @@ export default function UsersPage() {
                 className="data-[state=checked]:bg-[#4A90D9]"
               />
             </div>
+
+            <div className="border-t border-[#E2E8F0] pt-4">
+              <Label className="text-[13px] font-medium text-[#374151] mb-2 block">Telegram</Label>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-[12px] text-[#64748B] mb-1 block">ID de Telegram</Label>
+                  <Input
+                    placeholder="12345678"
+                    value={form.telegramId}
+                    onChange={(e) => setForm((f) => ({ ...f, telegramId: e.target.value }))}
+                    className="h-9 text-sm rounded-lg border-[#D1D5DB] focus:ring-[#4A90D9] focus:border-[#4A90D9]"
+                  />
+                </div>
+                <div>
+                  <Label className="text-[12px] text-[#64748B] mb-1 block">Nombre en Telegram</Label>
+                  <Input
+                    placeholder="@usuario"
+                    value={form.telegramName}
+                    onChange={(e) => setForm((f) => ({ ...f, telegramName: e.target.value }))}
+                    className="h-9 text-sm rounded-lg border-[#D1D5DB] focus:ring-[#4A90D9] focus:border-[#4A90D9]"
+                  />
+                </div>
+              </div>
+            </div>
           </div>
           <div className="flex justify-end gap-3 pt-4 border-t border-[#E2E8F0] mt-4">
             <Button
@@ -665,6 +697,14 @@ export default function UsersPage() {
                     {formatLastLogin(viewUser.lastLogin)}
                   </span>
                 </div>
+                {viewUser.telegramId && (
+                  <div className="flex justify-between">
+                    <span className="text-[13px] text-[#64748B]">Telegram</span>
+                    <span className="text-[13px] font-medium text-[#1E293B]">
+                      {viewUser.telegramName || viewUser.telegramId}
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
           )}

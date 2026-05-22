@@ -3,6 +3,7 @@ import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { useGSAP } from '@gsap/react';
 import type { Section } from '@/admin/types';
+import { getImageUrl } from './SectionRenderer';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -72,6 +73,7 @@ export function BrandsSection({ section }: { section: Section }) {
     try { return JSON.parse(section.content || '{}'); } catch { return { text: section.content, description: section.content }; }
   })();
 
+  const hasMedias = section.medias && section.medias.length > 0;
   const brands = content.brands || DEFAULT_BRANDS;
   const overline = section.title || 'Confianza';
   const heading = section.subtitle || 'Marcas';
@@ -109,15 +111,32 @@ export function BrandsSection({ section }: { section: Section }) {
         </div>
 
         <div className="flex flex-wrap justify-center items-center gap-12 md:gap-16">
-          {brands.map((brand: { name: string; color: string }) => (
-            <div
-              key={brand.name}
-              className="brand-item group flex items-center justify-center min-w-[120px] min-h-[50px] cursor-pointer opacity-60 hover:opacity-100 transition-all duration-300 hover:scale-105"
-              title={brand.name}
-            >
-              <BrandLogo name={brand.name} color={brand.color} />
-            </div>
-          ))}
+          {hasMedias ? (
+            section.medias!.map((media) => (
+              <div
+                key={media.id}
+                className="brand-item group flex items-center justify-center min-w-[120px] min-h-[50px] cursor-pointer opacity-60 hover:opacity-100 transition-all duration-300 hover:scale-105"
+                title={media.title || media.name}
+              >
+                <img
+                  src={getImageUrl(media.src)}
+                  alt={media.title || media.name}
+                  className="h-10 w-auto object-contain"
+                  onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                />
+              </div>
+            ))
+          ) : (
+            brands.map((brand: { name: string; color: string }) => (
+              <div
+                key={brand.name}
+                className="brand-item group flex items-center justify-center min-w-[120px] min-h-[50px] cursor-pointer opacity-60 hover:opacity-100 transition-all duration-300 hover:scale-105"
+                title={brand.name}
+              >
+                <BrandLogo name={brand.name} color={brand.color} />
+              </div>
+            ))
+          )}
         </div>
       </div>
     </section>

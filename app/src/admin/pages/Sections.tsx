@@ -25,6 +25,7 @@ import {
   Square,
   ArrowUpDown,
   HeartHandshake,
+  Eye,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -65,9 +66,11 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { toast } from 'sonner';
-import type { Page, Section, Media } from '../types';
-import { getPages, getSections, createSection, updateSection, deleteSection, getMedia, updateMedia } from '../services/api.service';
+import type { Page, Section, Media, Video, SectionType } from '../types';
+import { getPages, getSections, createSection, updateSection, deleteSection, getMedia, updateMedia, getVideos, updateVideo, getSectionTypes } from '../services/api.service';
 import { getStorageUrl } from '@/lib/storage';
+import { SectionPreview } from '../components/SectionPreview';
+import { DynamicSectionForm } from '../components/DynamicSectionForm';
 
 const PAGE_TABS = [
   { id: 'p1', label: 'Inicio', icon: Home, color: '#4A90D9', bg: '#EFF6FF' },
@@ -96,6 +99,7 @@ const SECTION_TYPE_CONFIG: Record<string, { label: string; icon: typeof Flame; c
 export default function Sections() {
   const [pages, setPages] = useState<Page[]>([]);
   const [sections, setSections] = useState<Section[]>([]);
+  const [sectionTypes, setSectionTypes] = useState<SectionType[]>([]);
   const [selectedPageId, setSelectedPageId] = useState<string>('all');
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState<string>('all');
@@ -110,12 +114,18 @@ export default function Sections() {
   const [sectionToDelete, setSectionToDelete] = useState<Section | null>(null);
   const [bulkActionDialogOpen, setBulkActionDialogOpen] = useState(false);
   const [bulkAction, setBulkAction] = useState<'activate' | 'deactivate'>('activate');
+  const [previewOpen, setPreviewOpen] = useState(false);
 
   // Media picker state
   const [sectionMedias, setSectionMedias] = useState<Media[]>([]);
+  const [sectionVideos, setSectionVideos] = useState<Video[]>([]);
   const [mediaPickerOpen, setMediaPickerOpen] = useState(false);
   const [allMedia, setAllMedia] = useState<Media[]>([]);
+  const [allVideos, setAllVideos] = useState<Video[]>([]);
   const [pickerSelectedIds, setPickerSelectedIds] = useState<Set<string>>(new Set());
+  const [pickerSelectedVideoIds, setPickerSelectedVideoIds] = useState<Set<string>>(new Set());
+  const [pickerTab, setPickerTab] = useState<'images' | 'videos'>('images');
+  const [pickerFolderFilter, setPickerFolderFilter] = useState<string>('all');
 
   // Form state
   const [formPageId, setFormPageId] = useState('p1');
@@ -130,9 +140,10 @@ export default function Sections() {
   useEffect(() => {
     const load = async () => {
       try {
-        const [pagesData, sectionsData] = await Promise.all([getPages(), getSections()]);
+        const [pagesData, sectionsData, typesData] = await Promise.all([getPages(), getSections(), getSectionTypes()]);
         setPages(pagesData);
         setSections(sectionsData);
+        setSectionTypes(typesData);
       } catch {
         toast.error('Error al cargar los datos');
       }
@@ -213,6 +224,24 @@ export default function Sections() {
     setDialogOpen(true);
   };
 
+  const openPreviewFromTable = async (section: Section) => {
+    setSelectedSection(section);
+    setFormTitle(section.title);
+    setFormSubtitle(section.subtitle);
+    setFormContent(section.content);
+    try {
+      const [allMedias, allVids] = await Promise.all([getMedia(), getVideos()]);
+      const assigned = allMedias.filter((m: Media) => m.sectionId === section.id).sort((a: Media, b: Media) => (a.order || 0) - (b.order || 0));
+      setSectionMedias(assigned);
+      const assignedVids = allVids.filter((v: Video) => v.sectionId === section.id);
+      setSectionVideos(assignedVids);
+    } catch {
+      setSectionMedias([]);
+      setSectionVideos([]);
+    }
+    setPreviewOpen(true);
+  };
+
   const openEdit = async (section: Section) => {
     setSelectedSection(section);
     setFormPageId(section.pageId);
@@ -223,13 +252,16 @@ export default function Sections() {
     setFormOrder(section.order);
     setFormType(section.type);
     setFormActive(section.active);
-    // Load assigned medias
+    // Load assigned medias and videos
     try {
-      const all = await getMedia();
-      const assigned = all.filter((m: Media) => m.sectionId === section.id).sort((a: Media, b: Media) => (a.order || 0) - (b.order || 0));
+      const [allMedias, allVids] = await Promise.all([getMedia(), getVideos()]);
+      const assigned = allMedias.filter((m: Media) => m.sectionId === section.id).sort((a: Media, b: Media) => (a.order || 0) - (b.order || 0));
       setSectionMedias(assigned);
+      const assignedVids = allVids.filter((v: Video) => v.sectionId === section.id);
+      setSectionVideos(assignedVids);
     } catch {
       setSectionMedias([]);
+      setSectionVideos([]);
     }
     setDialogMode('edit');
     setDialogOpen(true);
@@ -347,9 +379,13 @@ export default function Sections() {
   // Media picker functions
   const openMediaPicker = async () => {
     try {
-      const all = await getMedia();
-      setAllMedia(all);
+      const [allMedias, allVids] = await Promise.all([getMedia(), getVideos()]);
+      setAllMedia(allMedias);
+      setAllVideos(allVids);
       setPickerSelectedIds(new Set());
+      setPickerSelectedVideoIds(new Set());
+      setPickerTab('images');
+      setPickerFolderFilter('all');
       setMediaPickerOpen(true);
     } catch {
       toast.error('Error al cargar media');
@@ -366,20 +402,33 @@ export default function Sections() {
   };
 
   const assignSelectedMedias = async () => {
-    if (!selectedSection || pickerSelectedIds.size === 0) return;
+    if (!selectedSection) return;
     try {
-      await Promise.all(
-        Array.from(pickerSelectedIds).map((id, idx) =>
-          updateMedia(id, { sectionId: selectedSection.id, order: sectionMedias.length + idx })
-        )
-      );
-      const all = await getMedia();
-      const assigned = all.filter((m: Media) => m.sectionId === selectedSection.id).sort((a: Media, b: Media) => (a.order || 0) - (b.order || 0));
-      setSectionMedias(assigned);
-      setMediaPickerOpen(false);
-      toast.success(`${pickerSelectedIds.size} imagen(es) asignada(s)`);
+      if (pickerTab === 'images' && pickerSelectedIds.size > 0) {
+        await Promise.all(
+          Array.from(pickerSelectedIds).map((id, idx) =>
+            updateMedia(id, { sectionId: selectedSection.id, order: sectionMedias.length + idx })
+          )
+        );
+        const all = await getMedia();
+        const assigned = all.filter((m: Media) => m.sectionId === selectedSection.id).sort((a: Media, b: Media) => (a.order || 0) - (b.order || 0));
+        setSectionMedias(assigned);
+        setMediaPickerOpen(false);
+        toast.success(`${pickerSelectedIds.size} imagen(es) asignada(s)`);
+      } else if (pickerTab === 'videos' && pickerSelectedVideoIds.size > 0) {
+        await Promise.all(
+          Array.from(pickerSelectedVideoIds).map((id) =>
+            updateVideo(id, { sectionId: selectedSection.id })
+          )
+        );
+        const allVids = await getVideos();
+        const assigned = allVids.filter((v: Video) => v.sectionId === selectedSection.id);
+        setSectionVideos(assigned);
+        setMediaPickerOpen(false);
+        toast.success(`${pickerSelectedVideoIds.size} video(s) asignado(s)`);
+      }
     } catch {
-      toast.error('Error al asignar imagenes');
+      toast.error('Error al asignar media');
     }
   };
 
@@ -390,6 +439,28 @@ export default function Sections() {
       toast.success('Imagen quitada de la seccion');
     } catch {
       toast.error('Error al quitar imagen');
+    }
+  };
+
+  const removeVideoFromSection = async (videoId: string) => {
+    try {
+      await updateVideo(videoId, { sectionId: null });
+      setSectionVideos((prev) => prev.filter((v) => v.id !== videoId));
+      toast.success('Video quitado de la seccion');
+    } catch {
+      toast.error('Error al quitar video');
+    }
+  };
+
+  const updateMediaMeta = async (mediaId: string, title: string, link: string) => {
+    try {
+      await updateMedia(mediaId, { title, link });
+      setSectionMedias((prev) =>
+        prev.map((m) => (m.id === mediaId ? { ...m, title, link } : m))
+      );
+      toast.success('Datos de imagen actualizados');
+    } catch {
+      toast.error('Error al actualizar imagen');
     }
   };
 
@@ -431,6 +502,10 @@ export default function Sections() {
   };
 
   const getTypeConfig = (type: string) => {
+    const fromApi = sectionTypes.find((t) => t.type === type);
+    if (fromApi) {
+      return { label: fromApi.label, icon: Layers, color: fromApi.color, bg: fromApi.bgColor };
+    }
     return SECTION_TYPE_CONFIG[type] || { label: type, icon: Layers, color: '#64748B', bg: '#F1F5F9' };
   };
 
@@ -695,6 +770,13 @@ export default function Sections() {
                         ) : (
                           <>
                             <button
+                              onClick={() => openPreviewFromTable(section)}
+                              className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-[#EFF6FF] transition-colors text-[#4A90D9] hover:text-[#357ABD]"
+                              title="Vista Previa"
+                            >
+                              <Eye className="w-4 h-4" />
+                            </button>
+                            <button
                               onClick={() => openEdit(section)}
                               className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-[#F1F5F9] transition-colors text-[#64748B] hover:text-[#1E293B]"
                               title="Editar"
@@ -796,36 +878,87 @@ export default function Sections() {
                   <SelectValue placeholder="Selecciona un tipo" />
                 </SelectTrigger>
                 <SelectContent className="rounded-lg border-[#E2E8F0]">
-                  <SelectItem value="hero">Hero (Banner principal)</SelectItem>
-                  <SelectItem value="services-grid">Grid de servicios</SelectItem>
-                  <SelectItem value="content">Contenido (Texto + imagen)</SelectItem>
-                  <SelectItem value="gallery">Galeria de imagenes</SelectItem>
-                  <SelectItem value="brands">Marcas / Logos</SelectItem>
-                  <SelectItem value="clubs">Clubes / Mapa</SelectItem>
-                  <SelectItem value="weather-apps">Apps recomendadas</SelectItem>
-                  <SelectItem value="maintenance">Mantenimiento (Carrusel)</SelectItem>
-                  <SelectItem value="contact">Contacto + Formulario</SelectItem>
-                  <SelectItem value="page-header">Header de pagina</SelectItem>
-                  <SelectItem value="stats">Estadisticas</SelectItem>
-                  <SelectItem value="cta">Llamada a la accion</SelectItem>
-                  <SelectItem value="info-cards">Tarjetas de info</SelectItem>
-                  <SelectItem value="values">Valores empresa</SelectItem>
+                  {sectionTypes.length === 0 ? (
+                    <>
+                      <SelectItem value="hero">Hero (Banner principal)</SelectItem>
+                      <SelectItem value="services-grid">Grid de servicios</SelectItem>
+                      <SelectItem value="content">Contenido (Texto + imagen)</SelectItem>
+                      <SelectItem value="gallery">Galeria de imagenes</SelectItem>
+                      <SelectItem value="brands">Marcas / Logos</SelectItem>
+                      <SelectItem value="clubs">Clubes / Mapa</SelectItem>
+                      <SelectItem value="weather-apps">Apps recomendadas</SelectItem>
+                      <SelectItem value="maintenance">Mantenimiento (Carrusel)</SelectItem>
+                      <SelectItem value="contact">Contacto + Formulario</SelectItem>
+                      <SelectItem value="page-header">Header de pagina</SelectItem>
+                      <SelectItem value="stats">Estadisticas</SelectItem>
+                      <SelectItem value="cta">Llamada a la accion</SelectItem>
+                      <SelectItem value="info-cards">Tarjetas de info</SelectItem>
+                      <SelectItem value="values">Valores empresa</SelectItem>
+                    </>
+                  ) : (
+                    sectionTypes
+                      .filter((t) => t.active)
+                      .sort((a, b) => a.order - b.order)
+                      .map((t) => (
+                        <SelectItem key={t.type} value={t.type}>
+                          <span className="flex items-center gap-2">
+                            <span className="w-2 h-2 rounded-full" style={{ backgroundColor: t.color }} />
+                            {t.label}
+                          </span>
+                        </SelectItem>
+                      ))
+                  )}
                 </SelectContent>
               </Select>
             </div>
 
-            <div>
-              <Label className="text-[13px] font-medium text-[#374151] mb-1.5 block">
-                Contenido
-              </Label>
-              <Textarea
-                placeholder="Contenido de la seccion..."
-                value={formContent}
-                onChange={(e) => setFormContent(e.target.value)}
-                rows={4}
-                className="border-[#D1D5DB] rounded-lg focus-visible:ring-[#4A90D9] focus-visible:ring-[3px] resize-none"
-              />
-            </div>
+            {/* Dynamic content form based on section type */}
+            {(() => {
+              const selectedType = sectionTypes.find((t) => t.type === formType);
+              const hasSchema = selectedType && selectedType.configSchema && selectedType.configSchema !== '[]';
+              return hasSchema ? (
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <Label className="text-[13px] font-medium text-[#374151]">Contenido</Label>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const el = document.getElementById('raw-content-toggle');
+                        if (el) el.classList.toggle('hidden');
+                      }}
+                      className="text-[11px] text-[#4A90D9] hover:underline"
+                    >
+                      Ver/Editar JSON
+                    </button>
+                  </div>
+                  <DynamicSectionForm
+                    configSchema={selectedType!.configSchema}
+                    value={formContent}
+                    onChange={setFormContent}
+                  />
+                  <div id="raw-content-toggle" className="hidden mt-3">
+                    <Label className="text-[11px] text-[#64748B] mb-1 block">JSON crudo</Label>
+                    <Textarea
+                      value={formContent}
+                      onChange={(e) => setFormContent(e.target.value)}
+                      rows={4}
+                      className="border-[#D1D5DB] rounded-lg focus-visible:ring-[#4A90D9] focus-visible:ring-[3px] resize-none font-mono text-xs"
+                    />
+                  </div>
+                </div>
+              ) : (
+                <div>
+                  <Label className="text-[13px] font-medium text-[#374151] mb-1.5 block">Contenido (JSON)</Label>
+                  <Textarea
+                    placeholder="Contenido de la seccion..."
+                    value={formContent}
+                    onChange={(e) => setFormContent(e.target.value)}
+                    rows={4}
+                    className="border-[#D1D5DB] rounded-lg focus-visible:ring-[#4A90D9] focus-visible:ring-[3px] resize-none font-mono text-xs"
+                  />
+                </div>
+              );
+            })()}
 
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -860,61 +993,125 @@ export default function Sections() {
               </div>
             </div>
 
-            {/* Media assignment (only in edit mode) */}
-            {dialogMode === 'edit' && selectedSection && (
-              <div className="border border-[#E2E8F0] rounded-lg p-4">
-                <div className="flex items-center justify-between mb-3">
-                  <Label className="text-[13px] font-medium text-[#374151]">Imagenes asignadas</Label>
-                  <Button
-                    onClick={openMediaPicker}
-                    variant="outline"
-                    className="h-8 px-3 text-[12px] border-[#4A90D9] text-[#4A90D9] hover:bg-[#EFF6FF]"
-                  >
-                    <Plus className="w-3.5 h-3.5 mr-1" />
-                    Anadir
-                  </Button>
-                </div>
-                {sectionMedias.length === 0 ? (
-                  <p className="text-[12px] text-[#94A3B8]">No hay imagenes asignadas a esta seccion</p>
-                ) : (
-                  <div className="flex flex-wrap gap-3">
-                    {sectionMedias.map((media, idx) => (
-                      <div key={media.id} className="relative group w-[80px]">
-                        <div className="w-[80px] h-[80px] rounded-lg overflow-hidden border border-[#E2E8F0]">
-                          <img
-                            src={getStorageUrl(media.src)}
-                            alt={media.name}
-                            className="w-full h-full object-cover"
-                            onError={(e) => { (e.target as HTMLImageElement).src = '/hero-yacht.jpg'; }}
-                          />
-                        </div>
-                        <div className="absolute -top-2 -right-2 flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button
-                            onClick={() => moveMediaOrder(media.id, 'up')}
-                            disabled={idx === 0}
-                            className="w-6 h-6 rounded-full bg-[#001529] text-white flex items-center justify-center disabled:opacity-30"
-                          >
-                            <ArrowUp className="w-3 h-3" />
-                          </button>
-                          <button
-                            onClick={() => moveMediaOrder(media.id, 'down')}
-                            disabled={idx === sectionMedias.length - 1}
-                            className="w-6 h-6 rounded-full bg-[#001529] text-white flex items-center justify-center disabled:opacity-30"
-                          >
-                            <ArrowDown className="w-3 h-3" />
-                          </button>
-                          <button
-                            onClick={() => removeMediaFromSection(media.id)}
-                            className="w-6 h-6 rounded-full bg-[#EF4444] text-white flex items-center justify-center"
-                          >
-                            <Trash2 className="w-3 h-3" />
-                          </button>
-                        </div>
-                        <p className="text-[10px] text-[#64748B] truncate mt-1">{media.name}</p>
-                      </div>
-                    ))}
+            {/* Media assignment (only in edit mode, skip for clubs) */}
+            {dialogMode === 'edit' && selectedSection && formType !== 'clubs' && (
+              <div className="space-y-4">
+                {/* Images */}
+                <div className="border border-[#E2E8F0] rounded-lg p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <Label className="text-[13px] font-medium text-[#374151]">Imagenes asignadas</Label>
+                    <Button
+                      onClick={openMediaPicker}
+                      variant="outline"
+                      className="h-8 px-3 text-[12px] border-[#4A90D9] text-[#4A90D9] hover:bg-[#EFF6FF]"
+                    >
+                      <Plus className="w-3.5 h-3.5 mr-1" />
+                      Anadir
+                    </Button>
                   </div>
-                )}
+                  {sectionMedias.length === 0 ? (
+                    <p className="text-[12px] text-[#94A3B8]">No hay imagenes asignadas a esta seccion</p>
+                  ) : (
+                    <div className="flex flex-wrap gap-3">
+                      {sectionMedias.map((media, idx) => (
+                        <div key={media.id} className="relative group w-[80px]">
+                          <div className="w-[80px] h-[80px] rounded-lg overflow-hidden border border-[#E2E8F0]">
+                            <img
+                              src={getStorageUrl(media.thumbnailSrc || media.src)}
+                              alt={media.name}
+                              className="w-full h-full object-cover"
+                              onError={(e) => { (e.target as HTMLImageElement).src = '/hero-yacht.jpg'; }}
+                            />
+                          </div>
+                          <div className="absolute -top-2 -right-2 flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button
+                              onClick={() => moveMediaOrder(media.id, 'up')}
+                              disabled={idx === 0}
+                              className="w-6 h-6 rounded-full bg-[#001529] text-white flex items-center justify-center disabled:opacity-30"
+                            >
+                              <ArrowUp className="w-3 h-3" />
+                            </button>
+                            <button
+                              onClick={() => moveMediaOrder(media.id, 'down')}
+                              disabled={idx === sectionMedias.length - 1}
+                              className="w-6 h-6 rounded-full bg-[#001529] text-white flex items-center justify-center disabled:opacity-30"
+                            >
+                              <ArrowDown className="w-3 h-3" />
+                            </button>
+                            <button
+                              onClick={() => removeMediaFromSection(media.id)}
+                              className="w-6 h-6 rounded-full bg-[#EF4444] text-white flex items-center justify-center"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </button>
+                          </div>
+                          <p className="text-[10px] text-[#64748B] truncate mt-1">{media.name}</p>
+                          <input
+                            type="text"
+                            placeholder="Titulo"
+                            id={`title-${media.id}`}
+                            defaultValue={media.title || ''}
+                            className="w-full mt-1 text-[10px] border border-[#E2E8F0] rounded px-1 py-0.5"
+                          />
+                          <input
+                            type="text"
+                            placeholder="Enlace (/servicios)"
+                            id={`link-${media.id}`}
+                            defaultValue={media.link || ''}
+                            className="w-full mt-0.5 text-[10px] border border-[#E2E8F0] rounded px-1 py-0.5"
+                          />
+                          <button
+                            onClick={() => {
+                              const title = (document.getElementById(`title-${media.id}`) as HTMLInputElement)?.value || '';
+                              const link = (document.getElementById(`link-${media.id}`) as HTMLInputElement)?.value || '';
+                              updateMediaMeta(media.id, title, link);
+                            }}
+                            className="w-full mt-1 text-[10px] bg-[#4A90D9] text-white rounded py-0.5 hover:bg-[#357ABD]"
+                          >
+                            Guardar
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Videos */}
+                <div className="border border-[#E2E8F0] rounded-lg p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <Label className="text-[13px] font-medium text-[#374151]">Videos asignados</Label>
+                    <Button
+                      onClick={openMediaPicker}
+                      variant="outline"
+                      className="h-8 px-3 text-[12px] border-[#4A90D9] text-[#4A90D9] hover:bg-[#EFF6FF]"
+                    >
+                      <Plus className="w-3.5 h-3.5 mr-1" />
+                      Anadir
+                    </Button>
+                  </div>
+                  {sectionVideos.length === 0 ? (
+                    <p className="text-[12px] text-[#94A3B8]">No hay videos asignados a esta seccion</p>
+                  ) : (
+                    <div className="flex flex-wrap gap-3">
+                      {sectionVideos.map((video) => (
+                        <div key={video.id} className="relative group w-[100px]">
+                          <div className="w-[100px] h-[60px] rounded-lg overflow-hidden border border-[#E2E8F0] bg-[#1A2B3C] flex items-center justify-center">
+                            <svg className="w-6 h-6 text-[#00B4D8]" fill="currentColor" viewBox="0 0 24 24">
+                              <path d="M8 5v14l11-7z" />
+                            </svg>
+                          </div>
+                          <button
+                            onClick={() => removeVideoFromSection(video.id)}
+                            className="absolute -top-2 -right-2 w-5 h-5 rounded-full bg-[#EF4444] text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <Trash2 className="w-2.5 h-2.5" />
+                          </button>
+                          <p className="text-[10px] text-[#64748B] truncate mt-1">{video.title}</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             )}
           </div>
@@ -930,6 +1127,16 @@ export default function Sections() {
             >
               Cancelar
             </Button>
+            {dialogMode === 'edit' && selectedSection && (
+              <Button
+                variant="outline"
+                onClick={() => setPreviewOpen(true)}
+                className="border-[#4A90D9] text-[#4A90D9] hover:bg-[#EFF6FF] rounded-lg"
+              >
+                <Eye className="w-4 h-4 mr-1.5" />
+                Vista Previa
+              </Button>
+            )}
             <Button
               onClick={handleSave}
               disabled={!formName.trim()}
@@ -1003,43 +1210,123 @@ export default function Sections() {
 
       {/* Media Picker Dialog */}
       <Dialog open={mediaPickerOpen} onOpenChange={setMediaPickerOpen}>
-        <DialogContent className="rounded-xl shadow-2xl max-w-[640px] p-0 gap-0 border-[#E2E8F0]">
+        <DialogContent className="rounded-xl shadow-2xl max-w-[720px] p-0 gap-0 border-[#E2E8F0]">
           <DialogHeader className="px-6 pt-5 pb-4 border-b border-[#E2E8F0]">
-            <DialogTitle className="text-lg font-semibold text-[#1E293B]">Seleccionar imagenes</DialogTitle>
+            <DialogTitle className="text-lg font-semibold text-[#1E293B]">Seleccionar media</DialogTitle>
           </DialogHeader>
+          {/* Tabs */}
+          <div className="px-6 pt-4 flex items-center gap-3">
+            <div className="flex bg-[#F1F5F9] rounded-lg p-1">
+              <button
+                onClick={() => setPickerTab('images')}
+                className={`px-4 py-1.5 text-[13px] font-medium rounded-md transition-all ${
+                  pickerTab === 'images'
+                    ? 'bg-white text-[#1E293B] shadow-sm'
+                    : 'text-[#64748B] hover:text-[#1E293B]'
+                }`}
+              >
+                Imagenes
+              </button>
+              <button
+                onClick={() => setPickerTab('videos')}
+                className={`px-4 py-1.5 text-[13px] font-medium rounded-md transition-all ${
+                  pickerTab === 'videos'
+                    ? 'bg-white text-[#1E293B] shadow-sm'
+                    : 'text-[#64748B] hover:text-[#1E293B]'
+                }`}
+              >
+                Videos
+              </button>
+            </div>
+            {pickerTab === 'images' && (
+              <Select value={pickerFolderFilter} onValueChange={setPickerFolderFilter}>
+                <SelectTrigger className="w-[160px] h-8 text-[12px] border-[#D1D5DB] rounded-lg">
+                  <SelectValue placeholder="Todas las carpetas" />
+                </SelectTrigger>
+                <SelectContent className="rounded-lg">
+                  <SelectItem value="all">Todas las carpetas</SelectItem>
+                  {Array.from(new Set(allMedia.map((m) => m.folder))).sort().map((folder) => (
+                    <SelectItem key={folder} value={folder}>{folder}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          </div>
           <div className="px-6 py-4 max-h-[50vh] overflow-y-auto">
-            {allMedia.length === 0 ? (
-              <p className="text-sm text-[#94A3B8] text-center py-8">No hay imagenes disponibles</p>
+            {pickerTab === 'images' ? (
+              allMedia.length === 0 ? (
+                <p className="text-sm text-[#94A3B8] text-center py-8">No hay imagenes disponibles</p>
+              ) : (
+                <div className="grid grid-cols-4 sm:grid-cols-5 gap-3">
+                  {allMedia
+                    .filter((m) => pickerFolderFilter === 'all' || m.folder === pickerFolderFilter)
+                    .map((media) => {
+                      const isSelected = pickerSelectedIds.has(media.id);
+                      return (
+                        <button
+                          key={media.id}
+                          onClick={() => togglePickerMedia(media.id)}
+                          className={`relative rounded-lg overflow-hidden border-2 transition-all ${
+                            isSelected ? 'border-[#E8913A] ring-1 ring-[#E8913A]' : 'border-[#E2E8F0] hover:border-[#4A90D9]'
+                          }`}
+                        >
+                          <div className="aspect-square">
+                            <img
+                              src={getStorageUrl(media.thumbnailSrc || media.src)}
+                              alt={media.name}
+                              className="w-full h-full object-cover"
+                              onError={(e) => { (e.target as HTMLImageElement).src = '/hero-yacht.jpg'; }}
+                            />
+                          </div>
+                          {isSelected && (
+                            <div className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-[#E8913A] text-white flex items-center justify-center text-[10px] font-bold">
+                              ✓
+                            </div>
+                          )}
+                          <p className="text-[10px] text-[#64748B] truncate px-1.5 py-1 bg-white">{media.name}</p>
+                        </button>
+                      );
+                    })}
+                </div>
+              )
             ) : (
-              <div className="grid grid-cols-4 sm:grid-cols-5 gap-3">
-                {allMedia.map((media) => {
-                  const isSelected = pickerSelectedIds.has(media.id);
-                  return (
-                    <button
-                      key={media.id}
-                      onClick={() => togglePickerMedia(media.id)}
-                      className={`relative rounded-lg overflow-hidden border-2 transition-all ${
-                        isSelected ? 'border-[#E8913A] ring-1 ring-[#E8913A]' : 'border-[#E2E8F0] hover:border-[#4A90D9]'
-                      }`}
-                    >
-                      <div className="aspect-square">
-                        <img
-                          src={getStorageUrl(media.src)}
-                          alt={media.name}
-                          className="w-full h-full object-cover"
-                          onError={(e) => { (e.target as HTMLImageElement).src = '/hero-yacht.jpg'; }}
-                        />
-                      </div>
-                      {isSelected && (
-                        <div className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-[#E8913A] text-white flex items-center justify-center text-[10px] font-bold">
-                          ✓
+              allVideos.length === 0 ? (
+                <p className="text-sm text-[#94A3B8] text-center py-8">No hay videos disponibles</p>
+              ) : (
+                <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
+                  {allVideos.map((video) => {
+                    const isSelected = pickerSelectedVideoIds.has(video.id);
+                    return (
+                      <button
+                        key={video.id}
+                        onClick={() => {
+                          setPickerSelectedVideoIds((prev) => {
+                            const next = new Set(prev);
+                            if (next.has(video.id)) next.delete(video.id);
+                            else next.add(video.id);
+                            return next;
+                          });
+                        }}
+                        className={`relative rounded-lg overflow-hidden border-2 transition-all ${
+                          isSelected ? 'border-[#E8913A] ring-1 ring-[#E8913A]' : 'border-[#E2E8F0] hover:border-[#4A90D9]'
+                        }`}
+                      >
+                        <div className="aspect-video bg-[#1A2B3C] flex items-center justify-center">
+                          <svg className="w-8 h-8 text-[#00B4D8]" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M8 5v14l11-7z" />
+                          </svg>
                         </div>
-                      )}
-                      <p className="text-[10px] text-[#64748B] truncate px-1.5 py-1 bg-white">{media.name}</p>
-                    </button>
-                  );
-                })}
-              </div>
+                        {isSelected && (
+                          <div className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-[#E8913A] text-white flex items-center justify-center text-[10px] font-bold">
+                            ✓
+                          </div>
+                        )}
+                        <p className="text-[10px] text-[#64748B] truncate px-1.5 py-1 bg-white">{video.title}</p>
+                      </button>
+                    );
+                  })}
+                </div>
+              )
             )}
           </div>
           <DialogFooter className="px-6 py-4 border-t border-[#E2E8F0] gap-2">
@@ -1052,10 +1339,49 @@ export default function Sections() {
             </Button>
             <Button
               onClick={assignSelectedMedias}
-              disabled={pickerSelectedIds.size === 0}
+              disabled={
+                (pickerTab === 'images' && pickerSelectedIds.size === 0) ||
+                (pickerTab === 'videos' && pickerSelectedVideoIds.size === 0)
+              }
               className="bg-[#E8913A] hover:bg-[#D47A2A] text-white rounded-lg disabled:opacity-50"
             >
-              Asignar {pickerSelectedIds.size > 0 && `(${pickerSelectedIds.size})`}
+              Asignar{' '}
+              {pickerTab === 'images'
+                ? pickerSelectedIds.size > 0 && `(${pickerSelectedIds.size})`
+                : pickerSelectedVideoIds.size > 0 && `(${pickerSelectedVideoIds.size})`}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Preview Dialog */}
+      <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
+        <DialogContent className="rounded-xl shadow-2xl max-w-[900px] p-0 gap-0 border-[#E2E8F0] max-h-[85vh] overflow-y-auto">
+          <DialogHeader className="px-6 pt-5 pb-4 border-b border-[#E2E8F0]">
+            <DialogTitle className="text-lg font-semibold text-[#1E293B]">
+              Vista Previa: {selectedSection?.title || 'Seccion'}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="px-2 py-2">
+            {selectedSection && (
+              <SectionPreview
+                section={{
+                  ...selectedSection,
+                  title: formTitle || selectedSection.title,
+                  subtitle: formSubtitle || selectedSection.subtitle,
+                  content: formContent || selectedSection.content,
+                }}
+                medias={sectionMedias}
+              />
+            )}
+          </div>
+          <DialogFooter className="px-6 py-4 border-t border-[#E2E8F0] gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setPreviewOpen(false)}
+              className="border-[#D1D5DB] text-[#374151] rounded-lg"
+            >
+              Cerrar
             </Button>
           </DialogFooter>
         </DialogContent>

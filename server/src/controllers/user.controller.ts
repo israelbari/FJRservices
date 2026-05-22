@@ -10,6 +10,8 @@ const createUserSchema = z.object({
   password: z.string().min(4),
   role: z.enum(['admin', 'editor', 'cliente']).default('cliente'),
   status: z.enum(['active', 'inactive']).default('active'),
+  telegramId: z.string().optional(),
+  telegramName: z.string().optional(),
 });
 
 const updateUserSchema = z.object({
@@ -18,12 +20,14 @@ const updateUserSchema = z.object({
   password: z.string().min(4).optional(),
   role: z.enum(['admin', 'editor', 'cliente']).optional(),
   status: z.enum(['active', 'inactive']).optional(),
+  telegramId: z.string().optional(),
+  telegramName: z.string().optional(),
 });
 
 export async function getAll(req: Request, res: Response): Promise<void> {
   try {
     const users = await prisma.user.findMany({
-      select: { id: true, name: true, email: true, role: true, status: true, lastLogin: true, createdAt: true },
+      select: { id: true, name: true, email: true, role: true, status: true, telegramId: true, telegramName: true, lastLogin: true, createdAt: true },
       orderBy: { createdAt: 'desc' },
     });
     res.json(users);
@@ -36,7 +40,7 @@ export async function getById(req: Request, res: Response): Promise<void> {
   try {
     const user = await prisma.user.findUnique({
       where: { id: req.params.id as string },
-      select: { id: true, name: true, email: true, role: true, status: true, lastLogin: true, createdAt: true },
+      select: { id: true, name: true, email: true, role: true, status: true, telegramId: true, telegramName: true, lastLogin: true, createdAt: true },
     });
     if (!user) {
       res.status(404).json({ message: 'Usuario no encontrado' });
@@ -55,7 +59,7 @@ export async function create(req: Request, res: Response): Promise<void> {
 
     const user = await prisma.user.create({
       data: { ...data, password: hashedPassword },
-      select: { id: true, name: true, email: true, role: true, status: true, createdAt: true },
+      select: { id: true, name: true, email: true, role: true, status: true, telegramId: true, telegramName: true, createdAt: true },
     });
 
     res.status(201).json(user);
@@ -84,7 +88,7 @@ export async function update(req: Request, res: Response): Promise<void> {
     const user = await prisma.user.update({
       where: { id: req.params.id as string },
       data: updateData,
-      select: { id: true, name: true, email: true, role: true, status: true, lastLogin: true },
+      select: { id: true, name: true, email: true, role: true, status: true, telegramId: true, telegramName: true, lastLogin: true },
     });
 
     res.json(user);

@@ -16,8 +16,11 @@ export function ContentSection({ section }: { section: Section }) {
   const overline = section.title || '';
   const heading = section.subtitle || '';
   const paragraphs = content.paragraphs || (content.text ? [content.text] : content.description ? [content.description] : []);
-  const images = content.images || [];
-  const layout = content.layout || 'text-only'; // text-only, text-left, text-right, two-col
+  const images = section.medias?.map((m) => m.src).filter(Boolean) || [];
+  let layout = content.layout || 'text-only';
+  if (layout === 'text-only' && images.length > 0) {
+    layout = 'text-left';
+  } // text-only, text-left, text-right, two-col
   const bgColor = content.bgColor || 'white';
 
   useGSAP(() => {

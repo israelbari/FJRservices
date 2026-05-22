@@ -10,6 +10,7 @@ import {
   Dashboard,
   Pages,
   Sections,
+  SectionTypes,
   Media,
   Users,
   Clients,
@@ -39,6 +40,7 @@ export default function App() {
       <Route path="/admin" element={<AdminRouteGuard><Dashboard /></AdminRouteGuard>} />
       <Route path="/admin/paginas" element={<AdminRouteGuard><Pages /></AdminRouteGuard>} />
       <Route path="/admin/secciones" element={<AdminRouteGuard><Sections /></AdminRouteGuard>} />
+      <Route path="/admin/tipos-seccion" element={<AdminRouteGuard><SectionTypes /></AdminRouteGuard>} />
       <Route path="/admin/media" element={<AdminRouteGuard><Media /></AdminRouteGuard>} />
       <Route path="/admin/usuarios" element={<AdminRouteGuard><Users /></AdminRouteGuard>} />
       <Route path="/admin/clientes" element={<AdminRouteGuard><Clients /></AdminRouteGuard>} />

@@ -4,6 +4,7 @@ import { uploadFile, deleteFile, getPublicUrl, getPresignedUrl } from '../servic
 import { env } from '../utils/env';
 import { v4 as uuidv4 } from 'uuid';
 import AdmZip from 'adm-zip';
+import { processImage, isImage } from '../utils/image-processor';
 
 export async function getAll(req: Request, res: Response): Promise<void> {
   try {
@@ -42,21 +43,45 @@ export async function upload(req: Request, res: Response): Promise<void> {
 
     const { folder = 'General', clientId, sectionId } = req.body;
     const id = uuidv4();
-    const ext = req.file.originalname.split('.').pop() || '';
-    const objectName = `${id}.${ext}`;
     const bucket = clientId ? env.MINIO_BUCKET_CLIENTS : env.MINIO_BUCKET_MEDIA;
+    const originalMime = req.file.mimetype;
+    let src = '';
+    let thumbnailSrc = '';
+    let dimensions = '';
+    let finalSize = req.file.size;
 
-    await uploadFile(bucket, objectName, req.file.buffer, req.file.size, req.file.mimetype);
+    if (isImage(originalMime)) {
+      // Process with Sharp: generate preview + thumbnail
+      const processed = await processImage(req.file.buffer);
+      const previewName = `${id}-preview.webp`;
+      const thumbName = `${id}-thumb.webp`;
+
+      await uploadFile(bucket, previewName, processed.preview, processed.preview.length, 'image/webp');
+      await uploadFile(bucket, thumbName, processed.thumbnail, processed.thumbnail.length, 'image/webp');
+
+      src = `${bucket}/${previewName}`;
+      thumbnailSrc = `${bucket}/${thumbName}`;
+      dimensions = `${processed.width}x${processed.height}`;
+      finalSize = processed.preview.length;
+    } else {
+      // Non-image: upload as-is
+      const ext = req.file.originalname.split('.').pop() || '';
+      const objectName = `${id}.${ext}`;
+      await uploadFile(bucket, objectName, req.file.buffer, req.file.size, originalMime);
+      src = `${bucket}/${objectName}`;
+      thumbnailSrc = src;
+    }
 
     const media = await prisma.media.create({
       data: {
         id,
         name: req.file.originalname,
-        src: `${bucket}/${objectName}`,
+        src,
+        thumbnailSrc,
         folder: folder as string,
-        dimensions: '',
-        size: `${Math.round(req.file.size / 1024)} KB`,
-        mimeType: req.file.mimetype,
+        dimensions,
+        size: `${Math.round(finalSize / 1024)} KB`,
+        mimeType: isImage(originalMime) ? 'image/webp' : originalMime,
         clientId: clientId || null,
         sectionId: sectionId || null,
       },
@@ -78,6 +103,7 @@ export async function update(req: Request, res: Response): Promise<void> {
       return;
     }
 
+    const { title, link } = req.body;
     const updated = await prisma.media.update({
       where: { id: req.params.id as string },
       data: {
@@ -86,6 +112,8 @@ export async function update(req: Request, res: Response): Promise<void> {
         clientId: clientId !== undefined ? (clientId || null) : media.clientId,
         sectionId: sectionId !== undefined ? (sectionId || null) : media.sectionId,
         order: order !== undefined ? order : media.order,
+        title: title !== undefined ? title : media.title,
+        link: link !== undefined ? link : media.link,
       },
     });
 
@@ -104,15 +132,19 @@ export async function getUrl(req: Request, res: Response): Promise<void> {
       return;
     }
 
-    const [bucket, objectName] = media.src.split('/');
+    const useThumb = req.query.size === 'thumb' && media.thumbnailSrc;
+    const src = useThumb ? media.thumbnailSrc : media.src;
+
+    const [bucket, ...rest] = src.split('/');
+    const objectName = rest.join('/');
     const isPrivate = bucket === env.MINIO_BUCKET_CLIENTS;
 
     if (isPrivate) {
       const url = await getPresignedUrl(bucket, objectName, 900);
-      res.json({ url, media });
+      res.redirect(url);
     } else {
       const url = getPublicUrl(bucket, objectName);
-      res.json({ url, media });
+      res.redirect(url);
     }
   } catch {
     res.status(500).json({ message: 'Error al generar URL' });
@@ -127,8 +159,18 @@ export async function remove(req: Request, res: Response): Promise<void> {
       return;
     }
 
-    const [bucket, objectName] = media.src.split('/');
+    // Delete preview
+    const [bucket, ...rest] = media.src.split('/');
+    const objectName = rest.join('/');
     await deleteFile(bucket, objectName);
+
+    // Delete thumbnail if different
+    if (media.thumbnailSrc && media.thumbnailSrc !== media.src) {
+      const [thumbBucket, ...thumbRest] = media.thumbnailSrc.split('/');
+      const thumbObjectName = thumbRest.join('/');
+      await deleteFile(thumbBucket, thumbObjectName);
+    }
+
     await prisma.media.delete({ where: { id: req.params.id as string } });
 
     res.json({ message: 'Media eliminada' });
@@ -182,32 +224,54 @@ export async function uploadZip(req: Request, res: Response): Promise<void> {
 
       try {
         const id = uuidv4();
-        const objectName = isVideo ? `videos/${id}${ext}` : `${id}${ext}`;
         const buffer = entry.getData();
+        let src = '';
+        let thumbnailSrc = '';
+        let dimensions = '';
+        let finalSize = buffer.length;
 
-        await uploadFile(bucket, objectName, buffer, buffer.length, isVideo ? `video/${ext.replace('.', '')}` : `image/${ext.replace('.', '')}`);
+        if (isImage) {
+          const processed = await processImage(buffer);
+          const previewName = `${id}-preview.webp`;
+          const thumbName = `${id}-thumb.webp`;
+
+          await uploadFile(bucket, previewName, processed.preview, processed.preview.length, 'image/webp');
+          await uploadFile(bucket, thumbName, processed.thumbnail, processed.thumbnail.length, 'image/webp');
+
+          src = `${bucket}/${previewName}`;
+          thumbnailSrc = `${bucket}/${thumbName}`;
+          dimensions = `${processed.width}x${processed.height}`;
+          finalSize = processed.preview.length;
+        } else {
+          const objectName = `videos/${id}${ext}`;
+          await uploadFile(bucket, objectName, buffer, buffer.length, `video/${ext.replace('.', '')}`);
+          src = `${bucket}/${objectName}`;
+          thumbnailSrc = src;
+        }
 
         if (isImage) {
           const media = await prisma.media.create({
             data: {
               id,
               name: rawName,
-              src: `${bucket}/${objectName}`,
+              src,
+              thumbnailSrc,
               folder: folder as string,
-              dimensions: '',
-              size: `${Math.round(buffer.length / 1024)} KB`,
-              mimeType: `image/${ext.replace('.', '')}`,
+              dimensions,
+              size: `${Math.round(finalSize / 1024)} KB`,
+              mimeType: 'image/webp',
               clientId: clientId || null,
             },
           });
           uploadedImages.push({ name: rawName, src: media.src });
         } else {
+          const videoObjectName = `videos/${id}${ext}`;
           const title = rawName.substring(0, rawName.lastIndexOf('.')) || rawName;
           const video = await prisma.video.create({
             data: {
               title: title.trim(),
               url: '',
-              src: `${bucket}/${objectName}`,
+              src: `${bucket}/${videoObjectName}`,
               playbackRate: 1,
               sectionId: null,
             },

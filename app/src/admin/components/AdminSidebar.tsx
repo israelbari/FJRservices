@@ -13,6 +13,7 @@ import {
   LogOut,
   Menu,
   X,
+  Settings,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -27,6 +28,7 @@ const navItems: NavItem[] = [
   { to: '/admin', icon: <LayoutDashboard className="w-5 h-5" />, label: 'Dashboard', group: 'CONTENIDO' },
   { to: '/admin/paginas', icon: <FileText className="w-5 h-5" />, label: 'Paginas', group: 'CONTENIDO' },
   { to: '/admin/secciones', icon: <Layers className="w-5 h-5" />, label: 'Secciones', group: 'CONTENIDO' },
+  { to: '/admin/tipos-seccion', icon: <Settings className="w-5 h-5" />, label: 'Tipos de Seccion', group: 'CONTENIDO' },
   { to: '/admin/media', icon: <Image className="w-5 h-5" />, label: 'Media', group: 'CONTENIDO' },
   { to: '/admin/usuarios', icon: <Users className="w-5 h-5" />, label: 'Usuarios', group: 'GESTION' },
   { to: '/admin/clientes', icon: <UserCircle className="w-5 h-5" />, label: 'Clientes', group: 'GESTION' },

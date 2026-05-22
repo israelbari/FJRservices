@@ -5,6 +5,7 @@ import rateLimit from 'express-rate-limit';
 import cookieParser from 'cookie-parser';
 import { env } from './utils/env';
 import { ensureBuckets } from './services/minio.service';
+import { startTelegramBot } from './services/telegram.service';
 
 import authRoutes from './routes/auth.routes';
 import userRoutes from './routes/user.routes';
@@ -13,7 +14,13 @@ import sectionRoutes from './routes/section.routes';
 import mediaRoutes from './routes/media.routes';
 import clientRoutes from './routes/client.routes';
 import videoRoutes from './routes/video.routes';
+import sectionTypeRoutes from './routes/section-type.routes';
 import odooRoutes from './routes/odoo.routes';
+import projectRoutes from './routes/project.routes';
+import commentRoutes from './routes/comment.routes';
+import timeEntryRoutes from './routes/timeEntry.routes';
+import projectMediaRoutes from './routes/projectMedia.routes';
+import timeEntryMediaRoutes from './routes/timeEntryMedia.routes';
 
 const app = express();
 const PORT = parseInt(env.PORT, 10);
@@ -26,13 +33,13 @@ app.use(helmet({
 app.use(cors({
   origin: process.env.NODE_ENV === 'production'
     ? ['https://fjrservices.com']
-    : ['http://localhost:8080', 'http://localhost:3000', 'http://localhost:3001'],
+    : ['http://localhost:8080', 'http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002'],
   credentials: true,
 }));
 
 app.use(rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 200,
+  max: process.env.NODE_ENV === 'production' ? 200 : 5000,
   standardHeaders: true,
   legacyHeaders: false,
   skip: (req) => req.path.startsWith('/api/media/') && req.method === 'GET',
@@ -55,7 +62,13 @@ app.use('/api/sections', sectionRoutes);
 app.use('/api/media', mediaRoutes);
 app.use('/api/clients', clientRoutes);
 app.use('/api/videos', videoRoutes);
+app.use('/api/section-types', sectionTypeRoutes);
 app.use('/api/odoo', odooRoutes);
+app.use('/api/projects', projectRoutes);
+app.use('/api/comments', commentRoutes);
+app.use('/api/time-entries', timeEntryRoutes);
+app.use('/api/project-media', projectMediaRoutes);
+app.use('/api/time-entry-media', timeEntryMediaRoutes);
 
 // Error handler
 app.use((err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
@@ -68,14 +81,16 @@ async function start() {
   try {
     await ensureBuckets();
     console.log('MinIO buckets ready');
-
-    app.listen(PORT, '0.0.0.0', () => {
-      console.log(`Server running on http://0.0.0.0:${PORT}`);
-    });
-  } catch (error) {
-    console.error('Failed to start server:', error);
-    process.exit(1);
+  } catch {
+    console.warn('MinIO not available, skipping bucket setup');
   }
+
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`Server running on http://0.0.0.0:${PORT}`);
+  });
+
+  // Start Telegram bot (non-blocking)
+  startTelegramBot();
 }
 
 start();

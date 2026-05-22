@@ -174,6 +174,26 @@ export async function getOdooClients(): Promise<unknown[]> {
   );
 }
 
+export async function searchPartners(query: string): Promise<unknown[]> {
+  return searchReadCached(
+    'res.partner',
+    [['customer_rank', '>', 0], '|', ['name', 'ilike', query], ['email', 'ilike', query]],
+    ['id', 'name', 'email', 'phone', 'mobile'],
+    20,
+    60
+  );
+}
+
+export async function getPartnerProjects(partnerId: number): Promise<unknown[]> {
+  return searchReadCached(
+    'project.project',
+    [['partner_id', '=', partnerId]],
+    ['id', 'name', 'description', 'date_start', 'date_end', 'user_id', 'state'],
+    50,
+    300
+  );
+}
+
 export function isOdooConfigured(): boolean {
   return getConfig() !== null;
 }

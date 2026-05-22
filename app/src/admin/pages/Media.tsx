@@ -442,6 +442,7 @@ export default function MediaPage() {
   };
 
   const getMediaUrl = (src: string) => getStorageUrl(src);
+  const getThumbnailUrl = (media: Media) => getStorageUrl(media.thumbnailSrc || media.src);
 
   const formatDate = (dateStr: string) => {
     return new Date(dateStr).toLocaleDateString('es-ES', {
@@ -677,7 +678,7 @@ export default function MediaPage() {
                       />
                     </div>
                     <img
-                      src={getMediaUrl(img.src)}
+                      src={getThumbnailUrl(img)}
                       alt={img.name}
                       className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                       onError={(e) => {
@@ -781,7 +782,7 @@ export default function MediaPage() {
                       <td className="px-4 py-2">
                         <div className="w-12 h-12 rounded-lg overflow-hidden border border-[#E2E8F0]">
                           <img
-                            src={getMediaUrl(img.src)}
+                            src={getThumbnailUrl(img)}
                             alt={img.name}
                             className="w-full h-full object-cover"
                             onError={(e) => {
@@ -1190,7 +1191,7 @@ export default function MediaPage() {
               <div className="flex justify-center">
                 <div className="w-[120px] h-[120px] rounded-lg overflow-hidden border border-[#E2E8F0]">
                   <img
-                    src={getMediaUrl(editImage.src)}
+                    src={getThumbnailUrl(editImage)}
                     alt={editImage.name}
                     className="w-full h-full object-cover"
                     onError={(e) => {

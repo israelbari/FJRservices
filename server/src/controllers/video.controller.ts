@@ -10,7 +10,7 @@ const videoSchema = z.object({
   url: z.string().optional().default(''),
   src: z.string().optional(),
   playbackRate: z.coerce.number().min(0.1).max(5).default(1),
-  sectionId: z.string().optional(),
+  sectionId: z.string().optional().nullable(),
 });
 
 export async function getAll(req: Request, res: Response): Promise<void> {
@@ -24,7 +24,7 @@ export async function getAll(req: Request, res: Response): Promise<void> {
 
 export async function create(req: Request, res: Response): Promise<void> {
   try {
-    const { title, url, sectionId, playbackRate } = videoSchema.parse(req.body);
+    const { title, url, sectionId, playbackRate } = videoSchema.partial().parse(req.body);
     let src = '';
 
     // Si hay archivo subido, guardarlo en MinIO
@@ -63,7 +63,7 @@ export async function create(req: Request, res: Response): Promise<void> {
 
 export async function update(req: Request, res: Response): Promise<void> {
   try {
-    const { title, url, sectionId, playbackRate } = videoSchema.parse(req.body);
+    const { title, url, sectionId, playbackRate } = videoSchema.partial().parse(req.body);
     const existing = await prisma.video.findUnique({ where: { id: req.params.id as string } });
     if (!existing) {
       res.status(404).json({ message: 'Video no encontrado' });

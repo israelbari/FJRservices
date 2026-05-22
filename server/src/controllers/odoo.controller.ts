@@ -63,3 +63,33 @@ export async function getClientQuotes(req: Request, res: Response): Promise<void
     res.status(500).json({ message: 'Error al obtener presupuestos' });
   }
 }
+
+export async function searchPartners(req: Request, res: Response): Promise<void> {
+  try {
+    if (!odooService.isOdooConfigured()) {
+      res.status(503).json({ message: 'Odoo no configurado' });
+      return;
+    }
+    const query = (req.query.q as string) || '';
+    const partners = await odooService.searchPartners(query);
+    res.json(partners);
+  } catch (error) {
+    console.error('Odoo search partners error:', error);
+    res.status(500).json({ message: 'Error al buscar partners' });
+  }
+}
+
+export async function getPartnerProjects(req: Request, res: Response): Promise<void> {
+  try {
+    if (!odooService.isOdooConfigured()) {
+      res.status(503).json({ message: 'Odoo no configurado' });
+      return;
+    }
+    const partnerId = parseInt(req.params.partnerId as string);
+    const projects = await odooService.getPartnerProjects(partnerId);
+    res.json(projects);
+  } catch (error) {
+    console.error('Odoo partner projects error:', error);
+    res.status(500).json({ message: 'Error al obtener proyectos del partner' });
+  }
+}

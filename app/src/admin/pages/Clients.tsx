@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { QRCodeCanvas } from 'qrcode.react';
 import { toast, Toaster } from 'sonner';
 import { getClients, createClient, updateClient, deleteClient } from '../services/api.service';
+import { api } from '@/lib/api';
 import type { Client as ApiClient } from '../types';
 
 import {
@@ -79,17 +80,13 @@ function clientFromApi(apiClient: ApiClient): Client {
     status: apiClient.status,
     token: apiClient.token,
     createdAt: apiClient.createdAt,
-    projects: apiClient.project
-      ? [
-          {
-            id: 'proj-1',
-            name: apiClient.project,
-            description: '',
-            mediaIds: [],
-            createdAt: apiClient.createdAt,
-          },
-        ]
-      : [],
+    projects: (apiClient.projects || []).map((p) => ({
+      id: p.id,
+      name: p.name,
+      description: p.description || '',
+      mediaIds: [],
+      createdAt: p.createdAt,
+    })),
   };
 }
 
@@ -215,8 +212,6 @@ export default function Clients() {
       return;
     }
 
-    const projectName = formProjects[0]?.name || '';
-
     try {
       if (editingId) {
         await updateClient(editingId, {
@@ -224,19 +219,23 @@ export default function Clients() {
           email: formEmail.trim(),
           phone: formPhone.trim(),
           status: formStatus,
-          project: projectName,
         });
         const data = await getClients();
         setClients(data.map(clientFromApi));
         toast.success('Cliente actualizado correctamente');
       } else {
-        await createClient({
+        const newClient = await createClient({
           name: formName.trim(),
           email: formEmail.trim(),
           phone: formPhone.trim(),
           status: formStatus,
-          project: projectName,
         });
+        // Create projects for the new client
+        for (const proj of formProjects) {
+          if (proj.name.trim()) {
+            await api.post(`/projects/client/${newClient.id}`, { name: proj.name.trim(), description: proj.description });
+          }
+        }
         const data = await getClients();
         setClients(data.map(clientFromApi));
         toast.success('Cliente creado con acceso QR');
@@ -288,7 +287,7 @@ export default function Clients() {
 
   /* -- QR helpers -- */
   const getPortalUrl = (token: string) => {
-    return `${window.location.origin}/#/cliente/${token}`;
+    return `${window.location.origin}/cliente/${token}`;
   };
 
   const copyLink = async (token: string) => {
@@ -320,6 +319,25 @@ export default function Clients() {
   const regenerateToken = () => {
     if (!qrClient) return;
     toast.info('No implementado');
+  };
+
+  const loadClients = async () => {
+    const data = await getClients();
+    setClients(data.map(clientFromApi));
+  };
+
+  const toggleClientStatus = async (client: Client) => {
+    try {
+      const newStatus = client.status === 'active' ? 'inactive' : 'active';
+      await updateClient(client.id, { status: newStatus });
+      toast.success(`Cliente ${newStatus === 'active' ? 'activado' : 'desactivado'}`);
+      await loadClients();
+      if (qrClient?.id === client.id) {
+        setQrClient({ ...qrClient, status: newStatus });
+      }
+    } catch (err: any) {
+      toast.error(err?.message || 'Error al actualizar estado');
+    }
   };
 
   /* -- count media -- */
@@ -714,26 +732,34 @@ export default function Clients() {
                 </p>
               </div>
 
+              {/* Portal URL */}
+              <div className="w-full flex items-center gap-2">
+                <Input
+                  readOnly
+                  value={getPortalUrl(qrClient.token)}
+                  className="flex-1 h-9 text-xs bg-[#F8FAFC] border-[#E2E8F0] text-[#64748B]"
+                />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => copyLink(qrClient.token)}
+                  className="h-9 px-3 border-[#D1D5DB]"
+                >
+                  {copied ? <Check className="w-4 h-4 text-[#10B981]" /> : <Copy className="w-4 h-4 text-[#64748B]" />}
+                </Button>
+              </div>
+
+              {/* Portal active switch */}
+              <div className="w-full flex items-center justify-between px-2">
+                <span className="text-sm text-[#374151]">Portal activo</span>
+                <Switch
+                  checked={qrClient.status === 'active'}
+                  onCheckedChange={() => toggleClientStatus(qrClient)}
+                />
+              </div>
+
               {/* Actions */}
               <div className="w-full space-y-2">
-                <Button
-                  onClick={() => copyLink(qrClient.token)}
-                  variant="outline"
-                  className="w-full h-10 border-[#D1D5DB] text-[#374151]"
-                >
-                  {copied ? (
-                    <>
-                      <Check className="w-4 h-4 mr-2 text-[#10B981]" />
-                      Enlace copiado
-                    </>
-                  ) : (
-                    <>
-                      <Copy className="w-4 h-4 mr-2" />
-                      Copiar enlace
-                    </>
-                  )}
-                </Button>
-
                 <Button
                   onClick={sendEmail}
                   className="w-full h-10 bg-[#E8913A] hover:bg-[#D47A2A] text-white"
@@ -760,6 +786,18 @@ export default function Clients() {
                     Regenerar
                   </Button>
                 </div>
+
+                <Button
+                  variant="outline"
+                  className="w-full h-10 border-[#D1D5DB] text-[#374151]"
+                  onClick={() => {
+                    setIsQrOpen(false);
+                    setTimeout(() => openEdit(qrClient), 150);
+                  }}
+                >
+                  <Pencil className="w-4 h-4 mr-2" />
+                  Editar cliente
+                </Button>
               </div>
             </div>
           )}

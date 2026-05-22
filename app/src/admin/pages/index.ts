@@ -6,4 +6,5 @@ export { default as Media } from './Media';
 export { default as Users } from './Users';
 export { default as Clients } from './Clients';
 export { default as ClientDetail } from './ClientDetail';
+export { default as SectionTypes } from './SectionTypes';
 export { default as Portal } from './Portal';

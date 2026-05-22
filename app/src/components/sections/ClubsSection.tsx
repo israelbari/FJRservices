@@ -1,11 +1,11 @@
-import { MapPin } from 'lucide-react';
+import { MapPin, ExternalLink } from 'lucide-react';
 import type { Section } from '@/admin/types';
 
 const DEFAULT_CLUBS = [
-  { id: 1, name: 'Club Nautico de Cartagena', location: 'Cartagena, Murcia' },
-  { id: 2, name: 'Club Nautico Dos Mares', location: 'La Manga del Mar Menor' },
-  { id: 3, name: 'Club Nautico Los Alcazares', location: 'Los Alcazares' },
-  { id: 4, name: 'Puerto Deportivo San Pedro del Pinatar', location: 'San Pedro del Pinatar' },
+  { id: '1', name: 'Club Nautico de Cartagena', location: 'Cartagena, Murcia', mapLink: 'https://www.google.com/maps/search/?api=1&query=Club+N%C3%A1utico+Cartagena,+Cartagena,+Espa%C3%B1a' },
+  { id: '2', name: 'Club Nautico Dos Mares', location: 'La Manga del Mar Menor', mapLink: 'https://www.google.com/maps/search/?api=1&query=Club+N%C3%A1utico+Dos+Mares,+La+Manga+del+Mar+Menor,+Espa%C3%B1a' },
+  { id: '3', name: 'Club Nautico Los Alcazares', location: 'Los Alcazares', mapLink: 'https://www.google.com/maps/search/?api=1&query=Club+N%C3%A1utico+Los+Alc%C3%A1zares,+Los+Alc%C3%A1zares,+Espa%C3%B1a' },
+  { id: '4', name: 'Puerto Deportivo San Pedro del Pinatar', location: 'San Pedro del Pinatar', mapLink: 'https://www.google.com/maps/search/?api=1&query=Puerto+Deportivo+San+Pedro+del+Pinatar,+San+Pedro+del+Pinatar,+Espa%C3%B1a' },
 ];
 
 export function ClubsSection({ section }: { section: Section }) {
@@ -48,22 +48,30 @@ export function ClubsSection({ section }: { section: Section }) {
           </div>
 
           <div className="flex flex-col gap-4">
-            {clubs.map((club: { id: number; name: string; location: string }) => (
-              <div
+            {clubs.map((club: { id: string; name: string; location: string; mapLink?: string }) => (
+              <a
                 key={club.id}
-                className="flex items-start gap-4 p-4 border-b border-[rgba(255,255,255,0.1)] transition-all duration-300 hover:bg-[rgba(255,255,255,0.05)] group"
+                href={club.mapLink || '#'}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-start gap-4 p-4 border-b border-[rgba(255,255,255,0.1)] transition-all duration-300 hover:bg-[rgba(255,255,255,0.05)] group rounded-lg"
               >
                 <div className="w-8 h-8 rounded-full bg-[#00B4D8] flex items-center justify-center text-white font-bold text-[14px] shrink-0 transition-transform group-hover:scale-110">
                   {club.id}
                 </div>
-                <div>
-                  <h4 className="text-[18px] font-semibold text-white font-sans">{club.name}</h4>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <h4 className="text-[18px] font-semibold text-white font-sans">{club.name}</h4>
+                    {club.mapLink && (
+                      <ExternalLink size={14} className="text-[#66D6ED] opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+                    )}
+                  </div>
                   <div className="flex items-center gap-2 mt-1">
                     <MapPin size={14} className="text-[rgba(255,255,255,0.6)]" />
                     <span className="text-[14px] text-[rgba(255,255,255,0.6)]">{club.location}</span>
                   </div>
                 </div>
-              </div>
+              </a>
             ))}
           </div>
         </div>

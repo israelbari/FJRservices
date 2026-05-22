@@ -8,15 +8,17 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(uuid())
-  name      String
-  email     String   @unique
-  password  String
-  role      Role     @default(cliente)
-  status    Status   @default(active)
-  lastLogin DateTime @updatedAt @map("last_login")
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  id            String   @id @default(uuid())
+  name          String
+  email         String   @unique
+  password      String
+  role          Role     @default(cliente)
+  status        Status   @default(active)
+  telegramId    String?  @unique @map("telegram_id")
+  telegramName  String?  @map("telegram_name")
+  lastLogin     DateTime @updatedAt @map("last_login")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
 
   activityLogs ActivityLog[]
   clients      Client[]
@@ -57,37 +59,62 @@ model Section {
   @@map("sections")
 }
 
+model SectionType {
+  id           String   @id @default(uuid())
+  type         String   @unique
+  label        String
+  description  String?
+  icon         String   @default("Layers")
+  color        String   @default("#64748B")
+  bgColor      String   @default("#F1F5F9") @map("bg_color")
+  configSchema String   @db.Text @map("config_schema")
+  active       Boolean  @default(true)
+  order        Int      @default(0)
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@map("section_types")
+}
+
 model Media {
-  id         String   @id @default(uuid())
-  name       String
-  src        String
-  folder     String   @default("General")
-  dimensions String?
-  size       String?
-  mimeType   String?  @map("mime_type")
-  clientId   String?  @map("client_id")
-  sectionId  String?  @map("section_id")
-  order      Int      @default(0)
-  createdAt  DateTime @default(now()) @map("created_at")
+  id            String   @id @default(uuid())
+  name          String
+  src           String
+  thumbnailSrc  String   @default("") @map("thumbnail_src")
+  folder        String   @default("General")
+  dimensions    String?
+  size          String?
+  mimeType      String?  @map("mime_type")
+  source        String?  @default("upload") // upload | telegram
+  telegramMsgId String?  @map("telegram_msg_id")
+  clientId      String?  @map("client_id")
+  sectionId     String?  @map("section_id")
+  order         Int      @default(0)
+  title         String?
+  link          String?
+  createdAt     DateTime @default(now()) @map("created_at")
 
   clientMedias ClientMedia[]
+  projectMedias ProjectMedia[]
+  timeEntryMedias TimeEntryMedia[]
 
   @@map("media")
 }
 
 model Client {
-  id        String   @id @default(uuid())
-  name      String
-  email     String   @unique
-  phone     String?
-  project   String?
-  status    Status   @default(active)
-  token     String   @unique
-  userId    String?  @map("user_id")
-  user      User?    @relation(fields: [userId], references: [id])
-  createdAt DateTime @default(now()) @map("created_at")
+  id             String   @id @default(uuid())
+  name           String
+  email          String   @unique
+  phone          String?
+  status         Status   @default(active)
+  token          String   @unique
+  userId         String?  @map("user_id")
+  user           User?    @relation(fields: [userId], references: [id])
+  odooPartnerId  Int?     @map("odoo_partner_id")
+  createdAt      DateTime @default(now()) @map("created_at")
 
   medias ClientMedia[]
+  projects Project[]
 
   @@map("clients")
 }
@@ -102,6 +129,77 @@ model ClientMedia {
 
   @@unique([clientId, mediaId])
   @@map("client_media")
+}
+
+model Project {
+  id             String   @id @default(uuid())
+  clientId       String   @map("client_id")
+  client         Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  name           String
+  description    String?
+  status         Status   @default(active)
+  odooProjectId  Int?     @map("odoo_project_id")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  comments    Comment[]
+  timeEntries TimeEntry[]
+  medias      ProjectMedia[]
+
+  @@map("projects")
+}
+
+model Comment {
+  id        String   @id @default(uuid())
+  projectId String   @map("project_id")
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  content   String
+  visible   Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("comments")
+}
+
+model TimeEntry {
+  id          String   @id @default(uuid())
+  projectId   String   @map("project_id")
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  description String
+  hours       Float
+  date        DateTime @default(now())
+  visible     Boolean  @default(false)
+  billable    Boolean  @default(true)
+  notes       String?
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  medias TimeEntryMedia[]
+
+  @@map("time_entries")
+}
+
+model ProjectMedia {
+  id        String   @id @default(uuid())
+  projectId String   @map("project_id")
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  mediaId   String   @map("media_id")
+  media     Media    @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+  visible   Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([projectId, mediaId])
+  @@map("project_media")
+}
+
+model TimeEntryMedia {
+  id          String    @id @default(uuid())
+  timeEntryId String    @map("time_entry_id")
+  timeEntry   TimeEntry @relation(fields: [timeEntryId], references: [id], onDelete: Cascade)
+  mediaId     String    @map("media_id")
+  media       Media     @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  @@unique([timeEntryId, mediaId])
+  @@map("time_entry_media")
 }
 
 model Video {

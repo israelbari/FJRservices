@@ -31,6 +31,7 @@ export function ServicesGridSection({ section }: { section: Section }) {
     try { return JSON.parse(section.content || '{}'); } catch { return { text: section.content, description: section.content }; }
   })();
 
+  const hasMedias = section.medias && section.medias.length > 0;
   const services = content.services || DEFAULT_SERVICES;
   const overline = section.title || 'Servicios';
   const heading = section.subtitle || 'Servicios Ofrecidos';
@@ -72,32 +73,64 @@ export function ServicesGridSection({ section }: { section: Section }) {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {services.map((service: { title: string; image: string; icon?: string }, idx: number) => {
-            const IconComp = service.icon ? ICON_MAP[service.icon] : Wrench;
-            return (
-              <div
-                key={idx}
-                className="service-card group bg-white border border-[#E2E8F0] overflow-hidden transition-all duration-[400ms] hover:shadow-lg hover:border-[#00B4D8] cursor-pointer"
-              >
-                <div className="aspect-[4/3] overflow-hidden">
-                  <img
-                    src={getImageUrl(service.image)}
-                    alt={service.title}
-                    className="w-full h-full object-cover transition-transform duration-[400ms] group-hover:scale-105"
-                  />
-                </div>
-                <div className="relative p-6">
-                  <div className="flex items-center gap-3 mb-2">
-                    {IconComp && <IconComp size={20} className="text-[#00B4D8]" />}
-                    <h3 className="text-[18px] font-semibold text-[#1A2B3C] font-sans">
-                      {service.title}
-                    </h3>
+          {hasMedias ? (
+            section.medias!.map((media) => {
+              const CardContent = (
+                <div className="service-card group bg-white border border-[#E2E8F0] overflow-hidden transition-all duration-[400ms] hover:shadow-lg hover:border-[#00B4D8] cursor-pointer">
+                  <div className="aspect-[4/3] overflow-hidden">
+                    <img
+                      src={getImageUrl(media.src)}
+                      alt={media.title || media.name}
+                      className="w-full h-full object-cover transition-transform duration-[400ms] group-hover:scale-105"
+                    />
                   </div>
-                  <div className="absolute bottom-0 left-0 h-[3px] bg-[#00B4D8] w-0 group-hover:w-full transition-all duration-500" />
+                  <div className="relative p-6">
+                    <div className="flex items-center gap-3 mb-2">
+                      <Wrench size={20} className="text-[#00B4D8]" />
+                      <h3 className="text-[18px] font-semibold text-[#1A2B3C] font-sans">
+                        {media.title || media.name}
+                      </h3>
+                    </div>
+                    <div className="absolute bottom-0 left-0 h-[3px] bg-[#00B4D8] w-0 group-hover:w-full transition-all duration-500" />
+                  </div>
                 </div>
-              </div>
-            );
-          })}
+              );
+              return media.link ? (
+                <Link key={media.id} to={media.link} className="block no-underline">
+                  {CardContent}
+                </Link>
+              ) : (
+                <div key={media.id}>{CardContent}</div>
+              );
+            })
+          ) : (
+            services.map((service: { title: string; image: string; icon?: string }, idx: number) => {
+              const IconComp = service.icon ? ICON_MAP[service.icon] : Wrench;
+              return (
+                <div
+                  key={idx}
+                  className="service-card group bg-white border border-[#E2E8F0] overflow-hidden transition-all duration-[400ms] hover:shadow-lg hover:border-[#00B4D8] cursor-pointer"
+                >
+                  <div className="aspect-[4/3] overflow-hidden">
+                    <img
+                      src={getImageUrl(service.image)}
+                      alt={service.title}
+                      className="w-full h-full object-cover transition-transform duration-[400ms] group-hover:scale-105"
+                    />
+                  </div>
+                  <div className="relative p-6">
+                    <div className="flex items-center gap-3 mb-2">
+                      {IconComp && <IconComp size={20} className="text-[#00B4D8]" />}
+                      <h3 className="text-[18px] font-semibold text-[#1A2B3C] font-sans">
+                        {service.title}
+                      </h3>
+                    </div>
+                    <div className="absolute bottom-0 left-0 h-[3px] bg-[#00B4D8] w-0 group-hover:w-full transition-all duration-500" />
+                  </div>
+                </div>
+              );
+            })
+          )}
         </div>
 
         <div className="mt-10 text-center">

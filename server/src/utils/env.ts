@@ -23,6 +23,7 @@ const envSchema = z.object({
   ODOO_DB: z.string().optional().default(''),
   ODOO_USERNAME: z.string().optional().default(''),
   ODOO_API_KEY: z.string().optional().default(''),
+  TELEGRAM_BOT_TOKEN: z.string().optional().default(''),
 });
 
 export const env = envSchema.parse(process.env);
